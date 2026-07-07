@@ -1,11 +1,13 @@
-# Whisperer Overlay
+# OSRS Overlay Helpers
 
-A [RuneLite](https://runelite.net/) plugin that adds **visual-only** overlays for the
-Whisperer boss fight (Desert Treasure II). It does not automate anything: it never
-attacks, walks, activates items, or toggles prayers on your behalf. It only reads game
-state that's already visible on screen and draws indicators so you can react yourself.
+[RuneLite](https://runelite.net/) plugins that add **visual-only** overlays for tough boss
+fights. None of them automate anything: they never attack, walk, activate items, or toggle
+prayers on your behalf. They only read game state that's already visible on screen and draw
+indicators so you can react yourself.
 
-## Features
+## Whisperer Overlay
+
+Visual overlays for the Whisperer boss fight (Desert Treasure II).
 
 - **Tentacle danger tiles** - highlights the tiles about to be hit by the spinning
   tentacle attack, with a tick countdown.
@@ -16,16 +18,37 @@ state that's already visible on screen and draws indicators so you can react you
   them by remaining health.
 - **Bind timer** - shows a countdown over your player while bound in place.
 
-Every feature can be toggled independently in the plugin's config panel.
+## Inferno Overlay
+
+Visual overlays for the Inferno.
+
+- **Prayer indicator** - highlights the correct prayer icon (prayer tab and/or
+  bottom-right corner) and draws "descending boxes" showing incoming attacks a few
+  ticks out. You still click the prayer yourself.
+- **Safespot tiles** - color-codes ground tiles by what they're safe from
+  (melee/range/magic/combinations), plus red/yellow/green outlines on monsters
+  showing whether you're currently safespotted from them.
+- **Attack timers** - a tick countdown drawn above each monster.
+- **Wave composition display** - reference panel listing which monsters spawn on the
+  current/next wave.
+- **Obstacle tiles** - outlines tiles monsters can't path through.
+- **Nibbler helper** - highlights alive nibblers and the "central" one worth killing first.
+- **Blob helpers** - detection-tick indicator and a fading death-location marker.
+- **Meleer dig timer** - heuristic countdown hinting when a meleer might reposition.
+- **Jad/Zuk healer helper** - highlights healers that are free to kill.
+- **Zuk shield** - live and/or predicted safespot behind the moving shield.
+- **Zuk spawn-timer infobox** - countdown to the next mage/ranger spawn set.
+
+Every feature in both plugins can be toggled independently in its config panel.
 
 ## Building
 
-This is a standard RuneLite external plugin, structured the same way as
+These are standard RuneLite external plugins, structured the same way as
 [runelite/example-plugin](https://github.com/runelite/example-plugin):
 
 ```
 ./gradlew build
 ```
 
-To run it against your RuneLite client, follow RuneLite's
+To run them against your RuneLite client, follow RuneLite's
 [external plugin development guide](https://github.com/runelite/runelite/wiki/Developing-plugins-outside-of-the-plugin-hub).
