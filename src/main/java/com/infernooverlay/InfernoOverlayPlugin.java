@@ -14,6 +14,7 @@ import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
 import net.runelite.api.NpcID;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
@@ -46,23 +47,27 @@ public class InfernoOverlayPlugin extends Plugin
 {
 	private static final int INFERNO_REGION = 9043;
 
-	static final int TZKAL_ZUK_ANIMATION = 7566;
-	static final int JAL_NIB_ANIMATION = 7574;
-	static final int NIBBLER_DESPAWN_ANIMATION = 7576;
-	static final int JAL_MEJRAH_STAND_ANIMATION = 7577;
-	static final int JAL_MEJRAH_ANIMATION = 7578;
-	static final int JAL_AK_RANGE_ANIMATION = 7581;
-	static final int JAL_AK_MELEE_ANIMATION = 7582;
-	static final int JAL_AK_MAGIC_ANIMATION = 7583;
-	static final int JAL_IMKOT_ANIMATION = 7597;
-	static final int MELEE_BURROW_ANIMATION = 7600;
-	static final int JAL_XIL_MELEE_ANIMATION = 7604;
-	static final int JAL_XIL_RANGE_ANIMATION = 7605;
-	static final int JALTOK_JAD_MAGE_ANIMATION = 7592;
-	static final int JALTOK_JAD_RANGE_ANIMATION = 7593;
-	static final int JAL_ZEK_MAGE_ANIMATION = 7610;
-	static final int MAGE_RESPAWN_ANIMATION = 7611;
-	static final int JAL_ZEK_MELEE_ANIMATION = 7612;
+	// Sourced from RuneLite's gameval.AnimationID (generated from the game's own cache),
+	// not hardcoded, so these track future game updates automatically. A verification pass
+	// against that table also caught the ranger/mage blob animations being swapped below
+	// relative to an earlier hand-copied version - fixed here.
+	static final int TZKAL_ZUK_ANIMATION = AnimationID.ZUK_ATTACK;
+	static final int JAL_NIB_ANIMATION = AnimationID.JALNIB_ATTACK;
+	static final int NIBBLER_DESPAWN_ANIMATION = AnimationID.JALNIB_DEATH;
+	static final int JAL_MEJRAH_STAND_ANIMATION = AnimationID.JALMEJRAH_READY;
+	static final int JAL_MEJRAH_ANIMATION = AnimationID.JALMEJRAH_ATTACK;
+	static final int JAL_AK_MAGIC_ANIMATION = AnimationID.JALAK_ATTACK_MAGIC;
+	static final int JAL_AK_MELEE_ANIMATION = AnimationID.JALAK_ATTACK_MELEE;
+	static final int JAL_AK_RANGE_ANIMATION = AnimationID.JALAK_ATTACK_RANGED;
+	static final int JAL_IMKOT_ANIMATION = AnimationID.JALIMKOT_ATTACK;
+	static final int MELEE_BURROW_ANIMATION = AnimationID.JALIMKOT_DIGDOWN;
+	static final int JAL_XIL_MELEE_ANIMATION = AnimationID.JALXIL_ATTACK_MELEE;
+	static final int JAL_XIL_RANGE_ANIMATION = AnimationID.JALXIL_ATTACK_RANGED;
+	static final int JALTOK_JAD_MAGE_ANIMATION = AnimationID.JALTOKJAD_ATTACK_MAGIC;
+	static final int JALTOK_JAD_RANGE_ANIMATION = AnimationID.JALTOKJAD_ATTACK_RANGED;
+	static final int JAL_ZEK_MAGE_ANIMATION = AnimationID.JALAKXIL_ATTACK_MAGIC;
+	static final int MAGE_RESPAWN_ANIMATION = AnimationID.JALAKXIL_RESURRECT;
+	static final int JAL_ZEK_MELEE_ANIMATION = AnimationID.JALAKXIL_ATTACK_MELEE;
 
 	@Inject
 	private Client client;

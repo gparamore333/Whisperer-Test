@@ -9,6 +9,9 @@ import net.runelite.api.Prayer;
 import net.runelite.api.Projectile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.SpotanimID;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ClientTick;
 import net.runelite.api.events.GameObjectSpawned;
@@ -43,13 +46,23 @@ import java.util.Map;
 )
 public class WhispererOverlayPlugin extends Plugin
 {
-	static final int TENTACLE_NPC_ID = 12208;
-	static final int PILLAR_NPC_ID = 12209;
-	static final int LEECH_OBJECT_ACTIVE_ID = 47573;
+	static final int TENTACLE_NPC_ID = NpcID.WHISPERER_TENTACLE;
+	// The pillars appear to be tracked under two IDs depending on game phase (normal vs.
+	// shadow realm) - both are treated as pillars so tracking doesn't silently miss one phase.
+	private static final int PILLAR_NPC_ID_A = NpcID.WHISPERER_SCREECH_SAFESPOT;
+	private static final int PILLAR_NPC_ID_B = NpcID.WHISPERER_SCREECH_SAFESPOT_SHADOW;
+	static final int LEECH_OBJECT_ACTIVE_ID = ObjectID.WHISPERER_SEED_SHADOW_REALM_WEAK;
 
-	private static final int MAGE_PROJECTILE_ID = 2445;
-	private static final int RANGED_PROJECTILE_ID = 2444;
-	private static final int MELEE_PROJECTILE_ID = 2467;
+	private static final int MAGE_PROJECTILE_ID = SpotanimID.PROJ_WHISPERER_01_MAGIC_01;
+	private static final int RANGED_PROJECTILE_ID = SpotanimID.PROJ_WHISPERER_01_RANGED_01;
+	// Note: there is no verified melee auto-attack projectile for this boss - the ID a
+	// prior version of this plugin used (2467) actually corresponds to the "entangle"
+	// bind effect, not melee damage, so no protect-from-melee mapping is included.
+
+	private static boolean isPillar(int npcId)
+	{
+		return npcId == PILLAR_NPC_ID_A || npcId == PILLAR_NPC_ID_B;
+	}
 
 	@Inject
 	private Client client;
@@ -130,7 +143,7 @@ public class WhispererOverlayPlugin extends Plugin
 		List<NPC> activePillars = new ArrayList<>();
 		for (NPC npc : client.getTopLevelWorldView().npcs())
 		{
-			if (npc != null && npc.getId() == PILLAR_NPC_ID && getHpPercent(npc) > 0)
+			if (npc != null && isPillar(npc.getId()) && getHpPercent(npc) > 0)
 			{
 				activePillars.add(npc);
 			}
@@ -204,7 +217,7 @@ public class WhispererOverlayPlugin extends Plugin
 	public void onProjectileMoved(ProjectileMoved event)
 	{
 		int id = event.getProjectile().getId();
-		if (id != MAGE_PROJECTILE_ID && id != RANGED_PROJECTILE_ID && id != MELEE_PROJECTILE_ID)
+		if (id != MAGE_PROJECTILE_ID && id != RANGED_PROJECTILE_ID)
 		{
 			return;
 		}
@@ -309,10 +322,6 @@ public class WhispererOverlayPlugin extends Plugin
 		if (id == RANGED_PROJECTILE_ID)
 		{
 			return Prayer.PROTECT_FROM_MISSILES;
-		}
-		if (id == MELEE_PROJECTILE_ID)
-		{
-			return Prayer.PROTECT_FROM_MELEE;
 		}
 		return null;
 	}
