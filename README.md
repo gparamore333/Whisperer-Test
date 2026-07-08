@@ -82,14 +82,20 @@ so the state labels shown are exact, not guessed.
 
 - **Prayer-tab reminder** - outlines the correct protection prayer for whichever tracked
   monster is closest, for every monster whose attack style is unambiguous (Tekton, the three
-  Vanguards, the Guardians, Skeletal Mystics, the Tightrope ranger/mage, Olm's melee/magic
-  hands) or determinable by distance (lizardman shamans and the small Muttadile switch
-  between melee and ranged depending on whether they're adjacent to you, same as their
-  normal wilderness behavior). You still click the prayer yourself - there is no auto-pray.
+  Vanguards, the Guardians, Skeletal Mystics, the Tightrope ranger/mage) or determinable by
+  distance (lizardman shamans and the small Muttadile switch between melee and ranged
+  depending on whether they're adjacent to you, same as their normal wilderness behavior).
+  You still click the prayer yourself - there is no auto-pray. Olm's hands are deliberately
+  excluded here: despite being called the "melee hand" and "mage hand," neither one actually
+  attacks - that naming describes which damage type *you* need to deal to bypass their 66%
+  resistance, not what they hit you with. Only Olm's head attacks (alternating magic/ranged
+  with a 1-in-5 chance to switch each time), which isn't predictable from client-visible
+  state, so it isn't given a prayer recommendation either.
 - **Live state labels** - a short status drawn above each tracked monster: Tekton's
   fighting/walking-back/hammering-at-anvil state, Vespula's flying/portal phases, Vasa's
   walking/healing/crystal states, the Ice Demon's frozen/thawed state, each crab's current
-  colour, Olm's head/hand spawning/active/disabled states, and so on.
+  colour, Olm's head/hand spawning/active/disabled states (labelled with which damage type
+  each hand is weak to), and so on.
 - **Salve amulet reminder** - flags if you enter the Mystics room without a Salve amulet
   variant equipped (Skeletal Mystics are undead).
 

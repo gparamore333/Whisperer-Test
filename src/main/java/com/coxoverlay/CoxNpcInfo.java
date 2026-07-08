@@ -69,13 +69,17 @@ enum CoxNpcInfo
 	TIGHTROPE_RANGER(NpcID.RAIDS_TIGHTROPE_RANGER, CoxRoom.TIGHTROPE, "Deathly ranger", Prayer.PROTECT_FROM_MISSILES),
 	TIGHTROPE_MAGE(NpcID.RAIDS_TIGHTROPE_MAGE, CoxRoom.TIGHTROPE, "Deathly mage", Prayer.PROTECT_FROM_MAGIC),
 
+	// Only Olm's head attacks players (alternating magic/ranged, unpredictably - see
+	// OLM_HEAD's null prayer below). The hands never attack; "melee"/"magic" here describes
+	// which damage type you need to deal TO that hand to bypass its 66% resistance, not
+	// what it hits you with, so neither gets a prayer recommendation.
 	OLM_HEAD_SPAWNING(NpcID.OLM_HEAD_SPAWNING, CoxRoom.OLM, "Head - spawning", null),
-	OLM_HEAD(NpcID.OLM_HEAD, CoxRoom.OLM, "Head active", null),
-	OLM_HAND_LEFT_SPAWNING(NpcID.OLM_HAND_LEFT_SPAWNING, CoxRoom.OLM, "Left hand (melee) - spawning", null),
-	OLM_HAND_LEFT(NpcID.OLM_HAND_LEFT, CoxRoom.OLM, "Left hand (melee) active", Prayer.PROTECT_FROM_MELEE),
+	OLM_HEAD(NpcID.OLM_HEAD, CoxRoom.OLM, "Head active - attacks with magic/ranged (unpredictable)", null),
+	OLM_HAND_LEFT_SPAWNING(NpcID.OLM_HAND_LEFT_SPAWNING, CoxRoom.OLM, "Left hand - spawning (weak to melee)", null),
+	OLM_HAND_LEFT(NpcID.OLM_HAND_LEFT, CoxRoom.OLM, "Left hand active - weak to melee, doesn't attack", null),
 	OLM_HAND_LEFT_DYING(NpcID.OLM_HAND_LEFT_DYING, CoxRoom.OLM, "Left hand disabled", null),
-	OLM_HAND_RIGHT_SPAWNING(NpcID.OLM_HAND_RIGHT_SPAWNING, CoxRoom.OLM, "Right hand (magic) - spawning", null),
-	OLM_HAND_RIGHT(NpcID.OLM_HAND_RIGHT, CoxRoom.OLM, "Right hand (magic) active", Prayer.PROTECT_FROM_MAGIC),
+	OLM_HAND_RIGHT_SPAWNING(NpcID.OLM_HAND_RIGHT_SPAWNING, CoxRoom.OLM, "Right hand - spawning (weak to magic)", null),
+	OLM_HAND_RIGHT(NpcID.OLM_HAND_RIGHT, CoxRoom.OLM, "Right hand active - weak to magic, doesn't attack", null),
 	OLM_HAND_RIGHT_DYING(NpcID.OLM_HAND_RIGHT_DYING, CoxRoom.OLM, "Right hand disabled", null);
 
 	private static final Map<Integer, CoxNpcInfo> BY_ID = new HashMap<>();
