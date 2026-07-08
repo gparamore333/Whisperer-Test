@@ -23,6 +23,10 @@ dependencies {
     testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.36'
 }
 
-sourceCompatibility = '11'
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
 group = 'com.whispereroverlay'
 version = '1.0.0'
