@@ -42,6 +42,7 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX())
 // Lets you try a plugin out from a plain terminal instead of your IDE's run button:
 //   ./gradlew runWhispererOverlay
 //   ./gradlew runInfernoOverlay
+//   ./gradlew runKotoriInfernoOverlay
 //   ./gradlew runAllOverlays
 tasks.register('runWhispererOverlay', JavaExec) {
     group = 'runelite'
@@ -61,9 +62,18 @@ tasks.register('runInfernoOverlay', JavaExec) {
     jvmArgs runeliteJvmArgs
 }
 
+tasks.register('runKotoriInfernoOverlay', JavaExec) {
+    group = 'runelite'
+    description = 'Launches RuneLite locally with the Kotori Inferno Overlay plugin registered.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.kotoriinfernooverlay.KotoriInfernoOverlayPluginTest'
+    standardInput = System.in
+    jvmArgs runeliteJvmArgs
+}
+
 tasks.register('runAllOverlays', JavaExec) {
     group = 'runelite'
-    description = 'Launches RuneLite locally with both overlay plugins registered.'
+    description = 'Launches RuneLite locally with all overlay plugins registered.'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.osrsoverlaytest.AllOverlaysTest'
     standardInput = System.in

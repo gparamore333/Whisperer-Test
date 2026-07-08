@@ -44,7 +44,31 @@ Visual overlays for the Inferno.
 - **6-tick Jads** - optional toggle to predict Jad's attack cycle as 6 ticks instead of 8,
   for the Leagues Infinite Jad challenge.
 
-Every feature in both plugins can be toggled independently in its config panel.
+## Kotori Inferno Overlay
+
+A separate, independent Inferno plugin - a faithful port of
+[OreoCupcakes' kotori-plugins Inferno overlay](https://github.com/OreoCupcakes/kotori-plugins/tree/master/inferno),
+kept side-by-side with `Inferno Overlay` above so you can enable both at once and compare
+them directly. The original had no automation to strip; the only change from upstream is
+swapping its external `KotoriUtils` dependency for direct RuneLite API calls so it builds
+standalone here. It covers the same ground as `Inferno Overlay` (prayer indicator, safespot
+tiles, attack timers, wave display, obstacles, nibbler/blob helpers, Jad/Zuk healer
+highlighting, Zuk shield safespots, 6-tick Jads) but differs visually and behaviorally in a
+few notable ways:
+
+- **Configurable prayer colors** - the four prayer-indicator colors (correct/must-pray/
+  upcoming/non-priority) are each their own config option, instead of fixed colors.
+- **Bottom-right prayer icon** - an always-available prayer sprite indicator with a
+  red/standard background, separate from the prayer-tab outline.
+- **Fading blob death tiles** - the death-location outline fades out over real time instead
+  of staying a flat color.
+- **Meleer dig timer** - upstream's original heuristic (counts idle ticks up to a
+  configurable danger threshold) rather than the mechanics-grounded countdown in
+  `Inferno Overlay`; useful for seeing how the two compare.
+- **6-tick Jad** forces the magic attack specifically (matching upstream's exact behavior),
+  rather than just shortening the cycle length.
+
+Every feature in all three plugins can be toggled independently in its config panel.
 
 ## Building
 
@@ -64,7 +88,9 @@ need to check out RuneLite's own source tree. Run the `main` method of one of th
 
 - `com.whispereroverlay.WhispererOverlayPluginTest`
 - `com.infernooverlay.InfernoOverlayPluginTest`
-- `com.osrsoverlaytest.AllOverlaysTest` (both at once)
+- `com.kotoriinfernooverlay.KotoriInfernoOverlayPluginTest`
+- `com.osrsoverlaytest.AllOverlaysTest` (all three at once - handy for comparing the two
+  Inferno plugins side-by-side)
 
 This launches the actual client - log in with your own account as normal, then enable
 the plugin by name in the plugin list and open its config panel to toggle features.
