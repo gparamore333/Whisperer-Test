@@ -97,6 +97,10 @@ so the state labels shown are exact, not guessed.
   each hand is weak to), and so on.
 - **Salve amulet reminder** - flags if you enter the Mystics room without a Salve amulet
   variant equipped (Skeletal Mystics are undead).
+- **Shaman acid spit warning** - highlights the exact tile a lizardman shaman's acid spit
+  will land on, with a live tick countdown to impact read directly off the attack's own
+  projectile (the game's real timing, not a guess). No confirmed splash radius exists in
+  public data, so only the impact tile is shown - move off it before the countdown hits zero.
 
 ### Great Olm
 

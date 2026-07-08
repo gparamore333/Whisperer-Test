@@ -105,6 +105,14 @@ public interface CoxOverlayConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(position = 11, keyName = "shamanAcidWarning", name = "Shaman acid spit warning",
+		description = "Highlights the exact tile a lizardman shaman's acid spit will land on, with a live tick countdown read directly off the attack itself. No confirmed splash radius exists in public data, so only the impact tile is shown - move off it before the countdown hits zero.",
+		section = ROOMS_SECTION)
+	default boolean shamanAcidWarning()
+	{
+		return true;
+	}
+
 	@ConfigItem(position = 0, keyName = "salveReminder", name = "Salve amulet reminder",
 		description = "Warns if you enter the Mystics room without a Salve amulet variant equipped (Skeletal Mystics are undead).", section = MYSTICS_SECTION)
 	default boolean salveReminder()

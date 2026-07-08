@@ -4,18 +4,22 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 
 import javax.inject.Inject;
 
 import net.runelite.api.Client;
+import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.Prayer;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.OverlayUtil;
 
 /**
  * Draws Chambers of Xeric state labels and the prayer-tab reminder. Reads state computed by
@@ -24,6 +28,7 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 class CoxOverlay extends Overlay
 {
 	private static final Color SALVE_REMINDER_COLOR = Color.YELLOW;
+	private static final Color SHAMAN_ACID_COLOR = new Color(69, 200, 44);
 
 	private final Client client;
 	private final CoxOverlayPlugin plugin;
@@ -50,8 +55,39 @@ class CoxOverlay extends Overlay
 
 		renderPrayerReminder(graphics);
 		renderSalveReminder(graphics);
+		renderShamanAcidWarnings(graphics);
 
 		return null;
+	}
+
+	private void renderShamanAcidWarnings(Graphics2D graphics)
+	{
+		if (!config.shamanAcidWarning())
+		{
+			return;
+		}
+
+		for (CoxShamanAcid acid : plugin.getShamanAcidWarnings())
+		{
+			LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), acid.getTargetPoint());
+			if (localPoint == null)
+			{
+				continue;
+			}
+
+			Polygon tilePoly = Perspective.getCanvasTilePoly(client, localPoint);
+			if (tilePoly != null)
+			{
+				OverlayUtil.renderPolygon(graphics, tilePoly, SHAMAN_ACID_COLOR);
+			}
+
+			String ticksText = String.valueOf(acid.ticksUntilImpact());
+			Point canvasPoint = Perspective.localToCanvas(client, localPoint, acid.getTargetPoint().getPlane());
+			if (canvasPoint != null)
+			{
+				renderText(graphics, ticksText, SHAMAN_ACID_COLOR, canvasPoint);
+			}
+		}
 	}
 
 	private void renderStateLabels(Graphics2D graphics)

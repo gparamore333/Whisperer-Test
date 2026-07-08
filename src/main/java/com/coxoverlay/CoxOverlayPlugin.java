@@ -155,6 +155,9 @@ public class CoxOverlayPlugin extends Plugin
 	private Player olmAcidTarget;
 	private int olmAcidTargetTicks;
 
+	@Getter(AccessLevel.PACKAGE)
+	private final Set<CoxShamanAcid> shamanAcidWarnings = new HashSet<>();
+
 	@Provides
 	CoxOverlayConfig getConfig(ConfigManager configManager)
 	{
@@ -249,6 +252,8 @@ public class CoxOverlayPlugin extends Plugin
 
 		olmTeleportTargets.replaceAll((player, ticks) -> ticks - 1);
 		olmTeleportTargets.values().removeIf(ticks -> ticks <= 0);
+
+		shamanAcidWarnings.removeIf(CoxShamanAcid::hasLanded);
 	}
 
 	private static boolean isOlmPlayerSwapSpotanim(int id)
@@ -300,6 +305,7 @@ public class CoxOverlayPlugin extends Plugin
 		olmHandClenchTicks = 0;
 		olmAcidTarget = null;
 		olmAcidTargetTicks = 0;
+		shamanAcidWarnings.clear();
 	}
 
 	@Subscribe
@@ -383,7 +389,7 @@ public class CoxOverlayPlugin extends Plugin
 	@Subscribe
 	public void onProjectileMoved(ProjectileMoved event)
 	{
-		if (!isInChambers() || !config.olmEnable())
+		if (!isInChambers())
 		{
 			return;
 		}
@@ -392,24 +398,31 @@ public class CoxOverlayPlugin extends Plugin
 		switch (projectile.getId())
 		{
 			case SpotanimID.OLM_FIREBREATH_TRAVEL:
-				if (config.olmHeadPrayer())
+				if (config.olmEnable() && config.olmHeadPrayer())
 				{
 					olmHeadPrayer = Prayer.PROTECT_FROM_MAGIC;
 					olmHeadPrayerTicks = HEAD_PRAYER_DISPLAY_TICKS;
 				}
 				break;
 			case SpotanimID.OLM_GENERIC_RANGE_PROJ:
-				if (config.olmHeadPrayer())
+				if (config.olmEnable() && config.olmHeadPrayer())
 				{
 					olmHeadPrayer = Prayer.PROTECT_FROM_MISSILES;
 					olmHeadPrayerTicks = HEAD_PRAYER_DISPLAY_TICKS;
 				}
 				break;
 			case SpotanimID.OLM_ACID_SPIT:
-				if (config.olmAcidTargetWarning() && projectile.getInteracting() instanceof Player)
+				if (config.olmEnable() && config.olmAcidTargetWarning() && projectile.getInteracting() instanceof Player)
 				{
 					olmAcidTarget = (Player) projectile.getInteracting();
 					olmAcidTargetTicks = ACID_TARGET_DISPLAY_TICKS;
+				}
+				break;
+			case SpotanimID.LIZARDSHAMAN_SPIT_ACID:
+				if (isRoomEnabled(CoxRoom.SHAMANS) && config.shamanAcidWarning())
+				{
+					WorldPoint target = WorldPoint.fromLocal(client, event.getPosition());
+					shamanAcidWarnings.add(new CoxShamanAcid(projectile, target));
 				}
 				break;
 			default:
