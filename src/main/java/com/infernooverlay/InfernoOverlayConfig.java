@@ -292,28 +292,23 @@ public interface InfernoOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 2, keyName = "digTimer", name = "Idle warning",
-		description = "Draws a rising idle-tick count on meleers (turning orange past the danger threshold below) as a rough warning that " +
-			"one might be about to dig underground and reposition. This is NOT a precise countdown - the exact dig trigger isn't " +
-			"confirmed data, so it counts up (elapsed idle time) rather than down. Once a meleer actually starts digging, the " +
-			"regular 'Attack timer' above takes over with a real countdown to when it resurfaces.", section = MELEERS_SECTION)
+	@ConfigItem(position = 2, keyName = "digTimer", name = "Dig timer",
+		description = "Draws a countdown to when a meleer becomes able to dig underground and reposition next to you. Grounded in " +
+			"confirmed Inferno mechanics: a meleer can't dig until 50 ticks after it spawns (then every 40-60 ticks after each dig), " +
+			"and never within 15 ticks of its last attack, or while it can already reach you. The exact tick inside that 40-60 " +
+			"window isn't public knowledge, so the countdown bottoms out at 'DIG' (could happen any tick) rather than a further " +
+			"guess. Once it actually starts digging, the regular 'Attack timer' above takes over with a real countdown to when it " +
+			"resurfaces.", section = MELEERS_SECTION)
 	default boolean digTimer()
 	{
 		return false;
 	}
 
 	@Range(min = 1, max = 50)
-	@ConfigItem(position = 3, keyName = "digTimerThreshold", name = "Idle warning draw threshold", description = "Idle-tick count at which the idle warning starts showing.", section = MELEERS_SECTION)
+	@ConfigItem(position = 3, keyName = "digTimerThreshold", name = "Dig timer draw threshold", description = "Ticks-until-eligible at which the dig timer starts showing.", section = MELEERS_SECTION)
 	default int digTimerThreshold()
 	{
 		return 20;
-	}
-
-	@Range(min = 30, max = 70)
-	@ConfigItem(position = 4, keyName = "digTimerDangerThreshold", name = "Idle warning danger threshold", description = "Idle-tick count at which the idle warning turns dangerous (orange).", section = MELEERS_SECTION)
-	default int digTimerDangerThreshold()
-	{
-		return 50;
 	}
 
 	@ConfigItem(position = 5, keyName = "safespotsMeleer", name = "Safespots", description = "Include meleers in safespot calculation.", section = MELEERS_SECTION)

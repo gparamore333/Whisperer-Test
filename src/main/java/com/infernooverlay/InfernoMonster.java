@@ -29,9 +29,20 @@ class InfernoMonster
 	private final Type type;
 	private Attack nextAttack;
 	private int ticksTillNextAttack;
-	private int idleTicks;
 	private int lastAnimation;
 	private boolean lastCanAttack;
+
+	// Meleer (Jal-ImKot) dig mechanic, per the OSRS Wiki: a meleer can't dig until 50 ticks
+	// after it spawns, then every 40-60 ticks after each dig, and never within 15 ticks of
+	// its last attack. The exact tick inside that 40-60 window isn't public knowledge, so
+	// once eligible it's simply "could dig any tick" until it actually does.
+	private static final int INITIAL_DIG_ELIGIBLE_TICKS = 50;
+	private static final int POST_DIG_ELIGIBLE_TICKS = 40;
+	private static final int MIN_TICKS_SINCE_ATTACK_TO_DIG = 15;
+
+	private int ticksSinceSpawn;
+	private int ticksSinceLastMeleeAttack;
+	private int earliestDigTick = INITIAL_DIG_ELIGIBLE_TICKS;
 
 	// 0 = not in LOS, 1 = in LOS after moving, 2 = in LOS right now
 	private final Map<WorldPoint, Integer> safeSpotCache = new HashMap<>();
@@ -44,7 +55,8 @@ class InfernoMonster
 		this.ticksTillNextAttack = 0;
 		this.lastAnimation = -1;
 		this.lastCanAttack = false;
-		this.idleTicks = 0;
+		this.ticksSinceSpawn = 0;
+		this.ticksSinceLastMeleeAttack = INITIAL_DIG_ELIGIBLE_TICKS;
 	}
 
 	NPC getNpc()
@@ -72,14 +84,22 @@ class InfernoMonster
 		this.ticksTillNextAttack = ticksTillNextAttack;
 	}
 
-	int getIdleTicks()
+	/**
+	 * Ticks remaining until this meleer could next dig underground, or a value &lt;= 0 once
+	 * it's within the eligible window (in which case it could dig on any tick). Only
+	 * meaningful for {@link Type#MELEE}.
+	 */
+	int getTicksUntilDigEligible()
 	{
-		return idleTicks;
+		if (type != Type.MELEE)
+		{
+			return Integer.MAX_VALUE;
+		}
+		return Math.max(earliestDigTick - ticksSinceSpawn, MIN_TICKS_SINCE_ATTACK_TO_DIG - ticksSinceLastMeleeAttack);
 	}
 
 	private void updateNextAttack(Attack nextAttack, int ticksTillNextAttack)
 	{
-		this.idleTicks = 0;
 		this.nextAttack = nextAttack;
 		this.ticksTillNextAttack = ticksTillNextAttack;
 	}
@@ -279,7 +299,6 @@ class InfernoMonster
 	void gameTick(Client client, WorldPoint lastPlayerLocation, boolean finalPhase, int ticksSinceFinalPhase, int jadAttackCycleTicks)
 	{
 		safeSpotCache.clear();
-		idleTicks++;
 
 		if (ticksTillNextAttack > 0)
 		{
@@ -287,6 +306,21 @@ class InfernoMonster
 		}
 
 		int animation = npc.getAnimation();
+
+		if (type == Type.MELEE)
+		{
+			ticksSinceSpawn++;
+			ticksSinceLastMeleeAttack++;
+
+			if (animation == InfernoOverlayPlugin.JAL_IMKOT_ANIMATION)
+			{
+				ticksSinceLastMeleeAttack = 0;
+			}
+			else if (animation == InfernoOverlayPlugin.MELEE_BURROW_ANIMATION)
+			{
+				earliestDigTick = ticksSinceSpawn + POST_DIG_ELIGIBLE_TICKS;
+			}
+		}
 
 		if (type == Type.JAD && animation != -1 && animation != lastAnimation)
 		{

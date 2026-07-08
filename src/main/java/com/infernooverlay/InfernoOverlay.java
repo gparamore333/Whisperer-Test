@@ -88,6 +88,8 @@ class InfernoOverlay extends Overlay
 			renderBlobDeathSpots(graphics);
 		}
 
+		WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+
 		for (InfernoMonster monster : plugin.getInfernoMonsters())
 		{
 			renderMonsterOutline(graphics, monster);
@@ -108,8 +110,8 @@ class InfernoOverlay extends Overlay
 				renderTicksOnNpc(graphics, monster, plugin.getZukShield());
 			}
 
-			if (config.digTimer() && monster.getType() == InfernoMonster.Type.MELEE
-				&& monster.getIdleTicks() >= config.digTimerThreshold() && monster.getTicksTillNextAttack() == 0)
+			if (config.digTimer() && monster.getType() == InfernoMonster.Type.MELEE && monster.getTicksTillNextAttack() == 0
+				&& !monster.canAttack(client, playerLocation) && monster.getTicksUntilDigEligible() <= config.digTimerThreshold())
 			{
 				renderDigTimer(graphics, monster);
 			}
@@ -348,9 +350,10 @@ class InfernoOverlay extends Overlay
 
 	private void renderDigTimer(Graphics2D graphics, InfernoMonster monster)
 	{
-		String text = String.valueOf(monster.getIdleTicks());
+		int ticksUntilDig = monster.getTicksUntilDigEligible();
+		String text = ticksUntilDig <= 0 ? "DIG" : String.valueOf(ticksUntilDig);
 		Point canvasPoint = monster.getNpc().getCanvasTextLocation(graphics, text, 0);
-		Color color = monster.getIdleTicks() < config.digTimerDangerThreshold() ? Color.LIGHT_GRAY : Color.ORANGE;
+		Color color = ticksUntilDig <= 0 ? Color.ORANGE : Color.LIGHT_GRAY;
 		renderText(graphics, text, 11, color, canvasPoint);
 	}
 

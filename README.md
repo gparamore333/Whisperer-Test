@@ -34,7 +34,10 @@ Visual overlays for the Inferno.
 - **Obstacle tiles** - outlines tiles monsters can't path through.
 - **Nibbler helper** - highlights alive nibblers and the "central" one worth killing first.
 - **Blob helpers** - detection-tick indicator and a fading death-location marker.
-- **Meleer dig timer** - heuristic countdown hinting when a meleer might reposition.
+- **Meleer dig timer** - countdown to when a meleer becomes able to dig underground and
+  reposition, grounded in confirmed Inferno mechanics (50 ticks after spawn, then every
+  40-60 ticks after each dig, never within 15 ticks of its last attack); bottoms out at
+  "DIG" once eligible since the exact tick in that window isn't public knowledge.
 - **Jad/Zuk healer helper** - highlights healers that are free to kill.
 - **Zuk shield** - live and/or predicted safespot behind the moving shield.
 - **Zuk spawn-timer infobox** - countdown to the next mage/ranger spawn set.
