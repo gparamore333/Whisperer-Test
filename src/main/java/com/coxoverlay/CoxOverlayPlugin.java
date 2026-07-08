@@ -1,6 +1,8 @@
 package com.coxoverlay;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.regex.Pattern;
 import com.google.inject.Provides;
 import lombok.AccessLevel;
 import lombok.Getter;
+import net.runelite.api.Actor;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.EquipmentInventorySlot;
@@ -26,6 +29,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Prayer;
 import net.runelite.api.Projectile;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -158,6 +162,57 @@ public class CoxOverlayPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private final Set<CoxShamanAcid> shamanAcidWarnings = new HashSet<>();
 
+	// Live head-facing/exposure read - tells you whether you're currently somewhere Olm has to
+	// actively turn to find, which is the precondition for the special-denial technique below.
+	// Computed from the head NPC's own orientation each tick, never from the wiki's disputed
+	// numbered-safespot rules - see CoxOlmHeadFacing's javadoc for why.
+	@Getter(AccessLevel.PACKAGE)
+	private CoxOlmHeadFacing olmHeadFacing = CoxOlmHeadFacing.UNKNOWN;
+
+	@Getter(AccessLevel.PACKAGE)
+	private boolean olmPlayerExposed;
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<CoxOlmSafespot, WorldPoint> olmSafespotPositions = new EnumMap<>(CoxOlmSafespot.class);
+
+	@Getter(AccessLevel.PACKAGE)
+	private CoxOlmSafespot olmRecommendedSafespot;
+
+	// The actual point of the kiting technique: Olm's special attacks (Crystal Burst/Lightning/
+	// Teleport) run on a fixed rotation, always exactly two standard attacks apart. Forcing a
+	// head turn (moving somewhere it can't see you) makes it skip whatever's next - including a
+	// queued special, denying it outright rather than delaying it. This tracks position in that
+	// rotation by counting observed standard-attack events, and resyncs off the two specials
+	// that have a directly-observable signal (Lightning's graphic, Teleport's pairing message).
+	// Crystal Burst has no verified tracked ID, so it can't be directly confirmed - see
+	// registerOlmStandardAttack() for how that gap is handled.
+	@Getter(AccessLevel.PACKAGE)
+	private CoxOlmSpecial olmNextSpecial = CoxOlmSpecial.CRYSTAL_BURST;
+	private int olmStandardAttacksSinceSpecial;
+	private boolean olmRotationConfirmed;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean olmSpecialImminent;
+	private boolean olmStandardCountedThisTick;
+	private boolean olmLightningActiveLastTick;
+	@Getter(AccessLevel.PACKAGE)
+	private int olmSpecialDeniedFlashTicks;
+
+	private int olmMeleeAttackCount;
+	private int olmMageAttackCount;
+
+	@Getter(AccessLevel.PACKAGE)
+	private boolean showStaminaReminder;
+	private boolean staminaReminderArmed = true;
+
+	// Full field-of-view width either side of the head's exact facing angle that counts as
+	// "looking at you". Olm's exact vision-cone width isn't wiki-published, so this is a
+	// reasonable estimate (a quarter of the full circle) rather than a confirmed number.
+	private static final int HEAD_FACING_TOLERANCE_JAU = 384;
+	// Wiki-confirmed: exactly two standard attacks occur between each special in the rotation.
+	private static final int STANDARDS_BETWEEN_SPECIALS = 2;
+	private static final int SPECIAL_RESULT_DISPLAY_TICKS = 4;
+	private static final int STAMINA_HYSTERESIS_PERCENT = 10;
+
 	@Provides
 	CoxOverlayConfig getConfig(ConfigManager configManager)
 	{
@@ -204,17 +259,24 @@ public class CoxOverlayPlugin extends Plugin
 		closestPrayer = calculateClosestPrayer();
 		showSalveReminder = calculateShowSalveReminder();
 
+		olmStandardCountedThisTick = false;
+
 		olmLightningTrail.clear();
 		olmHealBeamTiles.clear();
 		olmTeleportDestinations.clear();
+		boolean lightningPresentThisTick = false;
 		if (config.olmEnable())
 		{
 			for (GraphicsObject graphicsObject : client.getTopLevelWorldView().getGraphicsObjects())
 			{
 				int id = graphicsObject.getId();
-				if (config.olmLightningWarning() && id == OLM_LIGHTNING_SPOTANIM_ID)
+				if (id == OLM_LIGHTNING_SPOTANIM_ID)
 				{
-					olmLightningTrail.add(WorldPoint.fromLocal(client, graphicsObject.getLocation()));
+					lightningPresentThisTick = true;
+					if (config.olmLightningWarning())
+					{
+						olmLightningTrail.add(WorldPoint.fromLocal(client, graphicsObject.getLocation()));
+					}
 				}
 				else if (config.olmHealBeamWarning() && id == SpotanimID.OLM_HEALME_SPOTANIM)
 				{
@@ -226,6 +288,11 @@ public class CoxOverlayPlugin extends Plugin
 				}
 			}
 		}
+		if (lightningPresentThisTick && !olmLightningActiveLastTick)
+		{
+			registerOlmSpecialObserved(CoxOlmSpecial.LIGHTNING);
+		}
+		olmLightningActiveLastTick = lightningPresentThisTick;
 
 		olmBurnVictims.clear();
 		if (config.olmEnable() && config.olmBurnVictimWarning())
@@ -254,6 +321,320 @@ public class CoxOverlayPlugin extends Plugin
 		olmTeleportTargets.values().removeIf(ticks -> ticks <= 0);
 
 		shamanAcidWarnings.removeIf(CoxShamanAcid::hasLanded);
+
+		updateOlmKiteAssist();
+		updateStaminaReminder();
+	}
+
+	private void updateOlmKiteAssist()
+	{
+		if (!config.olmEnable() || !config.olmKiteEnable())
+		{
+			olmHeadFacing = CoxOlmHeadFacing.UNKNOWN;
+			olmPlayerExposed = false;
+			olmSafespotPositions.clear();
+			olmRecommendedSafespot = null;
+			olmMeleeAttackCount = 0;
+			olmMageAttackCount = 0;
+			resetOlmSpecialRotation();
+			return;
+		}
+
+		olmHeadFacing = calculateOlmHeadFacing();
+		olmPlayerExposed = calculateOlmPlayerExposed();
+
+		// The rotation is a fixed loop across every non-head phase except the final stand,
+		// where the forced teleport/lightning/crystal burst are removed entirely per the wiki.
+		if (olmPhase == CoxOlmPhase.FINAL_STAND)
+		{
+			resetOlmSpecialRotation();
+		}
+
+		olmSpecialDeniedFlashTicks = Math.max(0, olmSpecialDeniedFlashTicks - 1);
+
+		updateOlmSafespots();
+
+		Player player = client.getLocalPlayer();
+		Actor interacting = player == null ? null : player.getInteracting();
+		boolean onMeleeHand = interacting instanceof NPC && ((NPC) interacting).getId() == NpcID.OLM_HAND_LEFT;
+		boolean onMageHand = interacting instanceof NPC && ((NPC) interacting).getId() == NpcID.OLM_HAND_RIGHT;
+		if (!onMeleeHand)
+		{
+			olmMeleeAttackCount = 0;
+		}
+		if (!onMageHand)
+		{
+			olmMageAttackCount = 0;
+		}
+	}
+
+	private void resetOlmSpecialRotation()
+	{
+		olmNextSpecial = CoxOlmSpecial.CRYSTAL_BURST;
+		olmStandardAttacksSinceSpecial = 0;
+		olmRotationConfirmed = false;
+		olmSpecialImminent = false;
+	}
+
+	/**
+	 * Registers one observed "standard attack" event (the head's basic magic/range attack, a
+	 * sphere, or one of the elemental-phase abilities that substitute for it - Acid Spray/Drip,
+	 * Falling Crystals, Crystal Bombs). Multiple game objects can spawn for a single such event
+	 * (e.g. up to 3 crystal bombs, or 11 falling-crystal markers at once), so this is rate-
+	 * limited to once per tick via {@code olmStandardCountedThisTick}.
+	 * <p>
+	 * Fire Wall has no verified tracked ID, so a standard attack during the flame phase that
+	 * manifests only as a Fire Wall won't be counted here - the rotation can drift for at most
+	 * one cycle in that case, and self-corrects the next time Lightning or Teleport is directly
+	 * observed via {@link #registerOlmSpecialObserved}.
+	 */
+	private void registerOlmStandardAttack()
+	{
+		if (!config.olmEnable() || !config.olmKiteEnable() || olmStandardCountedThisTick)
+		{
+			return;
+		}
+		olmStandardCountedThisTick = true;
+
+		if (olmSpecialImminent)
+		{
+			// A standard attack fired where the special was expected - per the wiki, a denied
+			// special never queues up again, it's simply skipped, so advance past it.
+			olmSpecialDeniedFlashTicks = SPECIAL_RESULT_DISPLAY_TICKS;
+			olmNextSpecial = olmNextSpecial.next();
+			olmStandardAttacksSinceSpecial = 0;
+			olmSpecialImminent = false;
+		}
+		else if (olmRotationConfirmed)
+		{
+			olmStandardAttacksSinceSpecial++;
+			if (olmStandardAttacksSinceSpecial >= STANDARDS_BETWEEN_SPECIALS)
+			{
+				olmSpecialImminent = true;
+			}
+		}
+	}
+
+	/** Registers a directly-confirmed special attack (Lightning's graphic, Teleport's chat pairing message). */
+	private void registerOlmSpecialObserved(CoxOlmSpecial special)
+	{
+		if (!config.olmEnable() || !config.olmKiteEnable())
+		{
+			return;
+		}
+		olmRotationConfirmed = true;
+		olmSpecialImminent = false;
+		olmStandardAttacksSinceSpecial = 0;
+		olmNextSpecial = special.next();
+	}
+
+	private CoxOlmHeadFacing calculateOlmHeadFacing()
+	{
+		if (!config.olmKiteHeadFacing())
+		{
+			return CoxOlmHeadFacing.UNKNOWN;
+		}
+
+		NPC head = findOlmHead();
+		if (head == null)
+		{
+			return CoxOlmHeadFacing.UNKNOWN;
+		}
+
+		int orientation = head.getOrientation();
+		int westDiff = angularDiff(orientation, 512);
+		int eastDiff = angularDiff(orientation, 1536);
+		int southDiff = angularDiff(orientation, 0);
+
+		if (southDiff <= westDiff && southDiff <= eastDiff)
+		{
+			return CoxOlmHeadFacing.MIDDLE;
+		}
+		return westDiff < eastDiff ? CoxOlmHeadFacing.LEFT : CoxOlmHeadFacing.RIGHT;
+	}
+
+	private boolean calculateOlmPlayerExposed()
+	{
+		if (!config.olmKiteHeadFacing() || client.getLocalPlayer() == null)
+		{
+			return false;
+		}
+
+		NPC head = findOlmHead();
+		if (head == null)
+		{
+			return false;
+		}
+
+		return isOlmTileExposed(head, client.getLocalPlayer().getWorldLocation());
+	}
+
+	/**
+	 * Whether the given point is within the head's current facing cone, computed live from the
+	 * head's real orientation and the bearing from the head to that point - not from either
+	 * wiki page's disputed fixed safespot rules.
+	 */
+	private boolean isOlmTileExposed(NPC head, WorldPoint target)
+	{
+		WorldPoint headLocation = head.getWorldLocation();
+		int dx = target.getX() - headLocation.getX();
+		int dy = target.getY() - headLocation.getY();
+		if (dx == 0 && dy == 0)
+		{
+			return false;
+		}
+
+		// RuneLite orientation is 0 = south, 512 = west, 1024 = north, 1536 = east, increasing
+		// clockwise (confirmed against RuneLite's own Angle.java) - convert the head-to-target
+		// bearing into the same units so it's directly comparable to Actor#getOrientation().
+		double bearingRadians = Math.atan2(dx, dy);
+		int bearingJau = (int) Math.round(bearingRadians / (2 * Math.PI) * 2048.0);
+		int bearingToTarget = ((bearingJau + 1024) % 2048 + 2048) % 2048;
+
+		return angularDiff(head.getOrientation(), bearingToTarget) <= HEAD_FACING_TOLERANCE_JAU;
+	}
+
+	/**
+	 * Resolves the 8 named safespot tiles (see {@link CoxOlmSafespot}) from wiki template-map
+	 * coordinates to their live, instance-mapped positions, and picks the nearest one currently
+	 * outside the head's facing cone as the recommended move target.
+	 */
+	private void updateOlmSafespots()
+	{
+		if (!config.olmKiteSafespotTiles())
+		{
+			olmSafespotPositions.clear();
+			olmRecommendedSafespot = null;
+			return;
+		}
+
+		NPC head = findOlmHead();
+		if (head == null)
+		{
+			olmSafespotPositions.clear();
+			olmRecommendedSafespot = null;
+			return;
+		}
+
+		olmSafespotPositions.clear();
+		for (CoxOlmSafespot spot : CoxOlmSafespot.values())
+		{
+			Collection<WorldPoint> instancePoints = WorldPoint.toLocalInstance(client, spot.toTemplatePoint());
+			if (!instancePoints.isEmpty())
+			{
+				olmSafespotPositions.put(spot, instancePoints.iterator().next());
+			}
+		}
+
+		olmRecommendedSafespot = null;
+		WorldPoint playerLocation = client.getLocalPlayer() == null ? null : client.getLocalPlayer().getWorldLocation();
+		if (playerLocation == null)
+		{
+			return;
+		}
+
+		int bestDistance = Integer.MAX_VALUE;
+		for (Map.Entry<CoxOlmSafespot, WorldPoint> entry : olmSafespotPositions.entrySet())
+		{
+			if (isOlmTileExposed(head, entry.getValue()))
+			{
+				continue;
+			}
+
+			int distance = entry.getValue().distanceTo(playerLocation);
+			if (distance < bestDistance)
+			{
+				bestDistance = distance;
+				olmRecommendedSafespot = entry.getKey();
+			}
+		}
+	}
+
+	private NPC findOlmHead()
+	{
+		return trackedNpcs.stream()
+			.filter(tracked -> tracked.getInfo() == CoxNpcInfo.OLM_HEAD)
+			.map(CoxTrackedNpc::getNpc)
+			.findFirst()
+			.orElse(null);
+	}
+
+	private static int angularDiff(int a, int b)
+	{
+		int diff = Math.abs(a - b) % 2048;
+		return diff > 1024 ? 2048 - diff : diff;
+	}
+
+	@Subscribe
+	public void onAnimationChanged(AnimationChanged event)
+	{
+		if (!isInChambers() || !config.olmEnable() || !config.olmKiteEnable())
+		{
+			return;
+		}
+
+		Player player = client.getLocalPlayer();
+		if (event.getActor() != player)
+		{
+			return;
+		}
+
+		Actor target = player.getInteracting();
+		if (!(target instanceof NPC))
+		{
+			return;
+		}
+
+		int targetId = ((NPC) target).getId();
+		if (targetId == NpcID.OLM_HAND_LEFT)
+		{
+			olmMeleeAttackCount++;
+			if (olmMeleeAttackCount > config.olmKiteMeleeRatio().getAttacks())
+			{
+				olmMeleeAttackCount = 1;
+			}
+		}
+		else if (targetId == NpcID.OLM_HAND_RIGHT)
+		{
+			olmMageAttackCount++;
+			if (olmMageAttackCount > config.olmKiteMageRatio().getAttacks())
+			{
+				olmMageAttackCount = 1;
+			}
+		}
+	}
+
+	private void updateStaminaReminder()
+	{
+		if (!config.olmKiteStaminaReminder())
+		{
+			showStaminaReminder = false;
+			staminaReminderArmed = true;
+			return;
+		}
+
+		int energyPercent = client.getEnergy() / 100;
+		int threshold = config.olmKiteStaminaThreshold();
+		if (staminaReminderArmed && energyPercent <= threshold)
+		{
+			showStaminaReminder = true;
+			staminaReminderArmed = false;
+		}
+		else if (energyPercent >= threshold + STAMINA_HYSTERESIS_PERCENT)
+		{
+			showStaminaReminder = false;
+			staminaReminderArmed = true;
+		}
+	}
+
+	int getOlmMeleeAttackCount()
+	{
+		return olmMeleeAttackCount;
+	}
+
+	int getOlmMageAttackCount()
+	{
+		return olmMageAttackCount;
 	}
 
 	private static boolean isOlmPlayerSwapSpotanim(int id)
@@ -306,6 +687,18 @@ public class CoxOverlayPlugin extends Plugin
 		olmAcidTarget = null;
 		olmAcidTargetTicks = 0;
 		shamanAcidWarnings.clear();
+		olmHeadFacing = CoxOlmHeadFacing.UNKNOWN;
+		olmPlayerExposed = false;
+		olmSafespotPositions.clear();
+		olmRecommendedSafespot = null;
+		resetOlmSpecialRotation();
+		olmStandardCountedThisTick = false;
+		olmLightningActiveLastTick = false;
+		olmSpecialDeniedFlashTicks = 0;
+		olmMeleeAttackCount = 0;
+		olmMageAttackCount = 0;
+		showStaminaReminder = false;
+		staminaReminderArmed = true;
 	}
 
 	@Subscribe
@@ -343,6 +736,16 @@ public class CoxOverlayPlugin extends Plugin
 			}
 		}
 
+		boolean isSphere = message.contains("fires a sphere of aggression")
+			|| message.contains("fires a sphere of magical power")
+			|| message.contains("fires a sphere of accuracy and dexterity");
+		if (isSphere)
+		{
+			// Spheres are one of the alternatives that make up a "standard attack" in the
+			// wiki's own terminology, so they count towards the special-attack rotation too.
+			registerOlmStandardAttack();
+		}
+
 		if (config.olmSpherePrayer())
 		{
 			if (message.contains("fires a sphere of aggression"))
@@ -369,12 +772,14 @@ public class CoxOverlayPlugin extends Plugin
 			olmHandClenchTicks = HAND_CLENCH_DISPLAY_TICKS;
 		}
 
-		if (config.olmTeleportWarning())
+		Matcher teleportMatcher = OLM_TELEPORT_PAIR_PATTERN.matcher(rawMessage);
+		if (teleportMatcher.find())
 		{
-			Matcher matcher = OLM_TELEPORT_PAIR_PATTERN.matcher(rawMessage);
-			if (matcher.find())
+			registerOlmSpecialObserved(CoxOlmSpecial.TELEPORT);
+
+			if (config.olmTeleportWarning())
 			{
-				String targetName = Text.sanitize(matcher.group(1));
+				String targetName = Text.sanitize(teleportMatcher.group(1));
 				for (Player player : client.getTopLevelWorldView().players())
 				{
 					if (player != null && targetName.equals(Text.sanitize(String.valueOf(player.getName()))))
@@ -398,6 +803,7 @@ public class CoxOverlayPlugin extends Plugin
 		switch (projectile.getId())
 		{
 			case SpotanimID.OLM_FIREBREATH_TRAVEL:
+				registerOlmStandardAttack();
 				if (config.olmEnable() && config.olmHeadPrayer())
 				{
 					olmHeadPrayer = Prayer.PROTECT_FROM_MAGIC;
@@ -405,6 +811,7 @@ public class CoxOverlayPlugin extends Plugin
 				}
 				break;
 			case SpotanimID.OLM_GENERIC_RANGE_PROJ:
+				registerOlmStandardAttack();
 				if (config.olmEnable() && config.olmHeadPrayer())
 				{
 					olmHeadPrayer = Prayer.PROTECT_FROM_MISSILES;
@@ -412,6 +819,7 @@ public class CoxOverlayPlugin extends Plugin
 				}
 				break;
 			case SpotanimID.OLM_ACID_SPIT:
+				registerOlmStandardAttack();
 				if (config.olmEnable() && config.olmAcidTargetWarning() && projectile.getInteracting() instanceof Player)
 				{
 					olmAcidTarget = (Player) projectile.getInteracting();
@@ -464,13 +872,18 @@ public class CoxOverlayPlugin extends Plugin
 		switch (gameObject.getId())
 		{
 			case ObjectID.OLM_CRYSTAL_BOMB:
+				// Crystal Bombs (a Crystal-phase standard-attack substitute) - not to be
+				// confused with Crystal Burst, the unrelated special-rotation attack.
+				registerOlmStandardAttack();
 				olmBombs.add(new CoxOlmBomb(gameObject, client.getTickCount()));
 				break;
 			case ObjectID.OLM_ACID_POOL:
+				registerOlmStandardAttack();
 				olmAcidPools.add(gameObject);
 				break;
 			case ObjectID.OLM_CRYSTAL_ATTACK_SMALL:
 			case ObjectID.OLM_CRYSTAL_ATTACK_LARGE:
+				registerOlmStandardAttack();
 				olmCrystalMarkers.add(gameObject);
 				break;
 			default:

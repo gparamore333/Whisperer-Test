@@ -29,6 +29,7 @@ class CoxOverlay extends Overlay
 {
 	private static final Color SALVE_REMINDER_COLOR = Color.YELLOW;
 	private static final Color SHAMAN_ACID_COLOR = new Color(69, 200, 44);
+	private static final Color STAMINA_REMINDER_COLOR = new Color(255, 215, 0);
 
 	private final Client client;
 	private final CoxOverlayPlugin plugin;
@@ -56,8 +57,21 @@ class CoxOverlay extends Overlay
 		renderPrayerReminder(graphics);
 		renderSalveReminder(graphics);
 		renderShamanAcidWarnings(graphics);
+		renderStaminaReminder(graphics);
 
 		return null;
+	}
+
+	private void renderStaminaReminder(Graphics2D graphics)
+	{
+		if (!plugin.isShowStaminaReminder())
+		{
+			return;
+		}
+
+		String text = "Drink stamina potion";
+		Point canvasPoint = client.getLocalPlayer().getCanvasTextLocation(graphics, text, 60);
+		renderText(graphics, text, STAMINA_REMINDER_COLOR, canvasPoint);
 	}
 
 	private void renderShamanAcidWarnings(Graphics2D graphics)

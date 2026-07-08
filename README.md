@@ -141,12 +141,46 @@ number for either of them to begin with (state labels only), there was nothing t
   final phase, so attacking it then is a wasted click) - you still choose and click
   whatever option remains, this only removes a wrong one.
 
+#### Solo Olm Kiting Assist
+
+Off by default (advanced/solo-specific, closed section in the config panel). Purely
+informational - it highlights tiles and shows text, it never moves or clicks anything for you.
+The actual point of the 3:0/4:1/3:1 hand-kiting techniques isn't dodging a hand attack (the
+hands never attack - only the head does); it's forcing the head to turn away right before one
+of its special attacks is due, which makes it skip that attack entirely rather than delay it.
+This assist is built around that:
+
+- **Head-facing indicator** - reads the head NPC's own live orientation every tick (not
+  either wiki page's fixed safespot-tile claims - the "Chambers of Xeric/Strategies" and
+  "Perfect Olm (Solo)" pages directly contradict each other on which tiles turn the head left
+  vs. right) to show which side it's currently facing, and highlights your own tile green
+  (safe), orange (facing middle), or red (facing you).
+- **Safespot tile grid** - draws the actual 8 numbered tiles from the wiki's own safespot
+  diagram (the tiles every guide calls by number, resolved to your live raid instance) and
+  highlights the nearest one currently outside the head's facing cone as your move target -
+  read live per-tile the same way as the head-facing indicator, not from either page's
+  disputed rules.
+- **Special attack due warning** - Olm's specials (Crystal Burst/Lightning/Teleport) run on a
+  wiki-confirmed fixed rotation, always exactly two standard attacks apart. This counts
+  observed standard attacks (the head's basic magic/range attack, spheres, and the elemental-
+  phase abilities that substitute for them) to flag when a special is next in line, resyncing
+  off Lightning and Teleport whenever they're directly observed (both have a confirmed
+  graphic/chat signal). Crystal Burst has no verified tracked ID, so a slot predicted as
+  Crystal Burst is a best-effort inference, not a confirmation - and Fire Wall (also
+  untracked) can let the count drift by at most one cycle during the flame phase before the
+  next Lightning/Teleport resyncs it.
+- **Attack ratio counter** - counts your own attacks on whichever hand you're fighting and
+  shows progress through your configured cycle (3:0 mage / 4:1 or 3:1 melee, picked in
+  config based on your weapon's attack speed) as a secondary pacing aid.
+- **Drink stamina reminder** - flags when your run energy drops below a configurable
+  threshold, since stamina potions are highly recommended for solo Olm. Works anywhere in the
+  raid, not just the Olm room.
+
 Not covered: precise puzzle-solving for the Crabs room (which crystal needs which colour
-isn't derivable from public data), the resource room prep counter, the thieving room, and
-Olm's Crystal Burst and Fire Wall specials (no verified tracked game object/graphic ID found
-for either yet). Vespula's actual attack pattern is deliberately left unpredicted (not a
-fixed style), matching how the upstream RoeLite plugin handles it - configure your in-game
-quick-prayers if you want a reminder there.
+isn't derivable from public data), the resource room prep counter, and the thieving room.
+Vespula's actual attack pattern is deliberately left unpredicted (not a fixed style), matching
+how the upstream RoeLite plugin handles it - configure your in-game quick-prayers if you want
+a reminder there.
 
 ## Building
 

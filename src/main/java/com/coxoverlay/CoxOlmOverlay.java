@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Stroke;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -45,6 +46,14 @@ class CoxOlmOverlay extends Overlay
 	private static final Color ACID_TARGET_COLOR = new Color(69, 200, 44);
 	private static final Color BURN_VICTIM_COLOR = new Color(255, 100, 0);
 	private static final Color PHASE_BANNER_COLOR = Color.WHITE;
+	private static final Color EXPOSED_COLOR = new Color(220, 30, 30);
+	private static final Color MIDDLE_COLOR = Color.ORANGE;
+	private static final Color SAFE_COLOR = new Color(0, 200, 0);
+	private static final Color SPECIAL_WARNING_COLOR = new Color(255, 60, 60);
+	private static final Color SPECIAL_DENIED_COLOR = new Color(0, 220, 255);
+	private static final Color KITE_COUNTER_COLOR = Color.CYAN;
+	private static final Color SAFESPOT_COLOR = new Color(255, 255, 255, 120);
+	private static final Color RECOMMENDED_SAFESPOT_COLOR = new Color(0, 255, 120);
 
 	private final Client client;
 	private final CoxOverlayPlugin plugin;
@@ -135,7 +144,133 @@ class CoxOlmOverlay extends Overlay
 			renderPhaseBanner(graphics);
 		}
 
+		if (config.olmKiteEnable())
+		{
+			renderKiteAssist(graphics);
+		}
+
 		return null;
+	}
+
+	private void renderKiteAssist(Graphics2D graphics)
+	{
+		Player localPlayer = client.getLocalPlayer();
+
+		if (config.olmKiteSafespotTiles())
+		{
+			renderSafespotTiles(graphics);
+		}
+
+		if (config.olmKiteHeadFacing() && plugin.getOlmHeadFacing() != CoxOlmHeadFacing.UNKNOWN)
+		{
+			Color tileColor = plugin.isOlmPlayerExposed() ? EXPOSED_COLOR
+				: plugin.getOlmHeadFacing() == CoxOlmHeadFacing.MIDDLE ? MIDDLE_COLOR : SAFE_COLOR;
+			LocalPoint localPoint = localPlayer.getLocalLocation();
+			Polygon tilePoly = Perspective.getCanvasTilePoly(client, localPoint);
+			if (tilePoly != null)
+			{
+				OverlayUtil.renderPolygon(graphics, tilePoly, tileColor);
+			}
+
+			String headText = "Head: " + plugin.getOlmHeadFacing();
+			Point headCanvasPoint = localPlayer.getCanvasTextLocation(graphics, headText, 60);
+			renderText(graphics, headText, tileColor, headCanvasPoint);
+
+			if (plugin.isOlmPlayerExposed() && plugin.getOlmRecommendedSafespot() != null)
+			{
+				String moveText = "Move to spot " + plugin.getOlmRecommendedSafespot().getNumber();
+				Point moveCanvasPoint = localPlayer.getCanvasTextLocation(graphics, moveText, 80);
+				renderText(graphics, moveText, RECOMMENDED_SAFESPOT_COLOR, moveCanvasPoint);
+			}
+		}
+
+		if (config.olmKiteSpecialWarning())
+		{
+			renderSpecialWarning(graphics, localPlayer);
+		}
+
+		if (config.olmKiteAttackCounter())
+		{
+			renderAttackCounter(graphics, localPlayer);
+		}
+	}
+
+	private void renderSafespotTiles(Graphics2D graphics)
+	{
+		CoxOlmSafespot recommended = plugin.getOlmRecommendedSafespot();
+		for (Map.Entry<CoxOlmSafespot, WorldPoint> entry : plugin.getOlmSafespotPositions().entrySet())
+		{
+			LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), entry.getValue());
+			if (localPoint == null)
+			{
+				continue;
+			}
+
+			boolean isRecommended = entry.getKey() == recommended;
+			Color color = isRecommended ? RECOMMENDED_SAFESPOT_COLOR : SAFESPOT_COLOR;
+
+			Polygon tilePoly = Perspective.getCanvasTilePoly(client, localPoint);
+			if (tilePoly != null)
+			{
+				OverlayUtil.renderPolygon(graphics, tilePoly, color);
+			}
+
+			String label = String.valueOf(entry.getKey().getNumber());
+			Point canvasPoint = Perspective.localToCanvas(client, localPoint, entry.getValue().getPlane());
+			if (canvasPoint != null)
+			{
+				renderText(graphics, label, color, canvasPoint);
+			}
+		}
+	}
+
+	private void renderSpecialWarning(Graphics2D graphics, Player localPlayer)
+	{
+		if (plugin.getOlmSpecialDeniedFlashTicks() > 0)
+		{
+			String text = "Special denied!";
+			Point canvasPoint = localPlayer.getCanvasTextLocation(graphics, text, 100);
+			renderText(graphics, text, SPECIAL_DENIED_COLOR, canvasPoint);
+			return;
+		}
+
+		if (!plugin.isOlmSpecialImminent())
+		{
+			return;
+		}
+
+		String text = plugin.getOlmNextSpecial() + " due - force a head turn now";
+		Point canvasPoint = localPlayer.getCanvasTextLocation(graphics, text, 100);
+		renderText(graphics, text, SPECIAL_WARNING_COLOR, canvasPoint);
+	}
+
+	private void renderAttackCounter(Graphics2D graphics, Player localPlayer)
+	{
+		int meleeCount = plugin.getOlmMeleeAttackCount();
+		int mageCount = plugin.getOlmMageAttackCount();
+
+		String text;
+		boolean lastAttackOfCycle;
+		if (meleeCount > 0)
+		{
+			int ratio = config.olmKiteMeleeRatio().getAttacks();
+			text = "Melee " + meleeCount + " / " + ratio;
+			lastAttackOfCycle = meleeCount >= ratio;
+		}
+		else if (mageCount > 0)
+		{
+			int ratio = config.olmKiteMageRatio().getAttacks();
+			text = "Mage " + mageCount + " / " + ratio;
+			lastAttackOfCycle = mageCount >= ratio;
+		}
+		else
+		{
+			return;
+		}
+
+		Color color = lastAttackOfCycle ? SPECIAL_WARNING_COLOR : KITE_COUNTER_COLOR;
+		Point canvasPoint = localPlayer.getCanvasTextLocation(graphics, text, 40);
+		renderText(graphics, text, color, canvasPoint);
 	}
 
 	private void renderActorHighlight(Graphics2D graphics, Player player, Color color)
