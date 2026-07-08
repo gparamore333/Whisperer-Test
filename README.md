@@ -50,5 +50,19 @@ These are standard RuneLite external plugins, structured the same way as
 ./gradlew build
 ```
 
-To run them against your RuneLite client, follow RuneLite's
+## Trying them out locally
+
+Each plugin has a small launcher under `src/test/java` that boots the real RuneLite
+client with that plugin registered, using `ExternalPluginManager.loadBuiltin(...)` - no
+need to check out RuneLite's own source tree. Run the `main` method of one of these
+(e.g. from your IDE):
+
+- `com.whispereroverlay.WhispererOverlayPluginTest`
+- `com.infernooverlay.InfernoOverlayPluginTest`
+- `com.osrsoverlaytest.AllOverlaysTest` (both at once)
+
+This launches the actual client - log in with your own account as normal, then enable
+the plugin by name in the plugin list and open its config panel to toggle features.
+
+For background on this pattern, see RuneLite's
 [external plugin development guide](https://github.com/runelite/runelite/wiki/Developing-plugins-outside-of-the-plugin-hub).
