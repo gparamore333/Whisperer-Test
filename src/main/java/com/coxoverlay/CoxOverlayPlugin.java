@@ -204,10 +204,6 @@ public class CoxOverlayPlugin extends Plugin
 	private boolean showStaminaReminder;
 	private boolean staminaReminderArmed = true;
 
-	// Full field-of-view width either side of the head's exact facing angle that counts as
-	// "looking at you". Olm's exact vision-cone width isn't wiki-published, so this is a
-	// reasonable estimate (a quarter of the full circle) rather than a confirmed number.
-	private static final int HEAD_FACING_TOLERANCE_JAU = 384;
 	// Wiki-confirmed: exactly two standard attacks occur between each special in the rotation.
 	private static final int STANDARDS_BETWEEN_SPECIALS = 2;
 	private static final int SPECIAL_RESULT_DISPLAY_TICKS = 4;
@@ -341,6 +337,9 @@ public class CoxOverlayPlugin extends Plugin
 		}
 
 		olmHeadFacing = calculateOlmHeadFacing();
+		// Populates olmSafespotPositions (and the recommended tile) before exposure is checked,
+		// since calculateOlmPlayerExposed() looks up the nearest resolved tile's visibility.
+		updateOlmSafespots();
 		olmPlayerExposed = calculateOlmPlayerExposed();
 
 		// The rotation is a fixed loop across every non-head phase except the final stand,
@@ -351,8 +350,6 @@ public class CoxOverlayPlugin extends Plugin
 		}
 
 		olmSpecialDeniedFlashTicks = Math.max(0, olmSpecialDeniedFlashTicks - 1);
-
-		updateOlmSafespots();
 
 		Player player = client.getLocalPlayer();
 		Actor interacting = player == null ? null : player.getInteracting();
@@ -428,6 +425,15 @@ public class CoxOverlayPlugin extends Plugin
 		olmNextSpecial = special.next();
 	}
 
+	/**
+	 * Buckets the head's live orientation into one of its 3 real states. Olm's head doesn't
+	 * sweep a smooth cone - the wiki confirms it only ever faces LEFT, MIDDLE, or RIGHT, and
+	 * per-tile visibility is a fixed table keyed off that state (see {@link CoxOlmSafespot}),
+	 * not off the raw angle. MIDDLE is a safe bucket (facing roughly straight into the room,
+	 * i.e. toward due south from the head - not in dispute between the two wiki pages).
+	 * Which physical side (west/melee vs. east/mage) is LEFT vs. RIGHT *is* disputed between
+	 * them, so that part honours {@link CoxOverlayConfig#olmKiteSwapLeftRight()}.
+	 */
 	private CoxOlmHeadFacing calculateOlmHeadFacing()
 	{
 		if (!config.olmKiteHeadFacing())
@@ -450,64 +456,36 @@ public class CoxOverlayPlugin extends Plugin
 		{
 			return CoxOlmHeadFacing.MIDDLE;
 		}
-		return westDiff < eastDiff ? CoxOlmHeadFacing.LEFT : CoxOlmHeadFacing.RIGHT;
+
+		boolean facingWest = westDiff < eastDiff;
+		boolean westIsLeft = !config.olmKiteSwapLeftRight();
+		if (facingWest)
+		{
+			return westIsLeft ? CoxOlmHeadFacing.LEFT : CoxOlmHeadFacing.RIGHT;
+		}
+		return westIsLeft ? CoxOlmHeadFacing.RIGHT : CoxOlmHeadFacing.LEFT;
 	}
 
 	private boolean calculateOlmPlayerExposed()
 	{
-		if (!config.olmKiteHeadFacing() || client.getLocalPlayer() == null)
+		if (!config.olmKiteHeadFacing() || client.getLocalPlayer() == null || olmHeadFacing == CoxOlmHeadFacing.UNKNOWN)
 		{
 			return false;
 		}
 
-		NPC head = findOlmHead();
-		if (head == null)
-		{
-			return false;
-		}
-
-		return isOlmTileExposed(head, client.getLocalPlayer().getWorldLocation());
-	}
-
-	/**
-	 * Whether the given point is within the head's current facing cone, computed live from the
-	 * head's real orientation and the bearing from the head to that point - not from either
-	 * wiki page's disputed fixed safespot rules.
-	 */
-	private boolean isOlmTileExposed(NPC head, WorldPoint target)
-	{
-		WorldPoint headLocation = head.getWorldLocation();
-		int dx = target.getX() - headLocation.getX();
-		int dy = target.getY() - headLocation.getY();
-		if (dx == 0 && dy == 0)
-		{
-			return false;
-		}
-
-		// RuneLite orientation is 0 = south, 512 = west, 1024 = north, 1536 = east, increasing
-		// clockwise (confirmed against RuneLite's own Angle.java) - convert the head-to-target
-		// bearing into the same units so it's directly comparable to Actor#getOrientation().
-		double bearingRadians = Math.atan2(dx, dy);
-		int bearingJau = (int) Math.round(bearingRadians / (2 * Math.PI) * 2048.0);
-		int bearingToTarget = ((bearingJau + 1024) % 2048 + 2048) % 2048;
-
-		return angularDiff(head.getOrientation(), bearingToTarget) <= HEAD_FACING_TOLERANCE_JAU;
+		CoxOlmSafespot nearest = findNearestSafespot(client.getLocalPlayer().getWorldLocation());
+		return nearest != null && !nearest.isVisibleWhen(olmHeadFacing);
 	}
 
 	/**
 	 * Resolves the 8 named safespot tiles (see {@link CoxOlmSafespot}) from wiki template-map
 	 * coordinates to their live, instance-mapped positions, and picks the nearest one currently
-	 * outside the head's facing cone as the recommended move target.
+	 * visible-safe per the wiki's own per-tile table as the recommended move target. Always
+	 * computed while kiting assist is on (not gated by the tile-grid display toggle), since
+	 * {@link #calculateOlmPlayerExposed()} depends on the resolved positions too.
 	 */
 	private void updateOlmSafespots()
 	{
-		if (!config.olmKiteSafespotTiles())
-		{
-			olmSafespotPositions.clear();
-			olmRecommendedSafespot = null;
-			return;
-		}
-
 		NPC head = findOlmHead();
 		if (head == null)
 		{
@@ -528,7 +506,7 @@ public class CoxOverlayPlugin extends Plugin
 
 		olmRecommendedSafespot = null;
 		WorldPoint playerLocation = client.getLocalPlayer() == null ? null : client.getLocalPlayer().getWorldLocation();
-		if (playerLocation == null)
+		if (playerLocation == null || olmHeadFacing == CoxOlmHeadFacing.UNKNOWN)
 		{
 			return;
 		}
@@ -536,7 +514,7 @@ public class CoxOverlayPlugin extends Plugin
 		int bestDistance = Integer.MAX_VALUE;
 		for (Map.Entry<CoxOlmSafespot, WorldPoint> entry : olmSafespotPositions.entrySet())
 		{
-			if (isOlmTileExposed(head, entry.getValue()))
+			if (entry.getKey().isVisibleWhen(olmHeadFacing))
 			{
 				continue;
 			}
@@ -548,6 +526,22 @@ public class CoxOverlayPlugin extends Plugin
 				olmRecommendedSafespot = entry.getKey();
 			}
 		}
+	}
+
+	private CoxOlmSafespot findNearestSafespot(WorldPoint location)
+	{
+		CoxOlmSafespot nearest = null;
+		int bestDistance = Integer.MAX_VALUE;
+		for (Map.Entry<CoxOlmSafespot, WorldPoint> entry : olmSafespotPositions.entrySet())
+		{
+			int distance = entry.getValue().distanceTo(location);
+			if (distance < bestDistance)
+			{
+				bestDistance = distance;
+				nearest = entry.getKey();
+			}
+		}
+		return nearest;
 	}
 
 	private NPC findOlmHead()

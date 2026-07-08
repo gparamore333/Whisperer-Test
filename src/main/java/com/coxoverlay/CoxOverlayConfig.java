@@ -227,22 +227,30 @@ public interface CoxOverlayConfig extends Config
 	}
 
 	@ConfigItem(position = 1, keyName = "olmKiteHeadFacing", name = "Head-facing indicator",
-		description = "Shows which side of the room the head is currently oriented towards, read live off the head NPC's own facing angle every tick (not off the wiki's fixed safespot-tile rules, which two wiki pages actually contradict each other on), plus whether you're currently standing in its line of fire. Highlights your own tile green when the head isn't facing your side, orange when it's facing the middle, and red when it's facing you.",
+		description = "Shows which side of the room the head is currently oriented towards, read live off the head NPC's own facing angle every tick, plus whether you're currently standing in its line of fire (checked against the wiki's own per-tile visibility table, not a guessed cone). Highlights your own tile green when safe, orange when the head is centred, and red when it's facing you.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteHeadFacing()
 	{
 		return true;
 	}
 
-	@ConfigItem(position = 2, keyName = "olmKiteSafespotTiles", name = "Safespot tile grid",
-		description = "Draws the 8 numbered safespot tiles from the OSRS Wiki's own safespot diagram (the same tiles every guide calls by number) and highlights the nearest one currently outside the head's facing cone as your move target - so instead of just knowing a turn is needed, you know exactly which named spot to run to before it happens. Safety per-tile is computed live from the head's real facing angle, not from the wiki's fixed left/right rules (its two pages contradict each other on those).",
+	@ConfigItem(position = 2, keyName = "olmKiteSwapLeftRight", name = "Swap head-facing left/right",
+		description = "The wiki's two Great Olm pages directly contradict each other on which side of the room is the head's \"left\" vs. \"right\" state, and this plugin has no way to verify that without watching it happen in game. If the head-facing indicator and safespot recommendations seem backwards once you've tested it live, flip this - it swaps which physical side (west/melee-hand vs. east/mage-hand) is treated as LEFT vs. RIGHT for the safespot table lookup.",
+		section = OLM_KITE_SECTION)
+	default boolean olmKiteSwapLeftRight()
+	{
+		return false;
+	}
+
+	@ConfigItem(position = 3, keyName = "olmKiteSafespotTiles", name = "Safespot tile grid",
+		description = "Draws the 8 numbered safespot tiles from the OSRS Wiki's own safespot diagram (the same tiles every guide calls by number) and highlights the nearest one currently outside the head's facing cone as your move target - so instead of just knowing a turn is needed, you know exactly which named spot to run to before it happens. Safety per-tile is looked up from the wiki's own per-tile visibility table, not a guessed cone.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteSafespotTiles()
 	{
 		return true;
 	}
 
-	@ConfigItem(position = 3, keyName = "olmKiteAttackCounter", name = "Attack ratio counter",
+	@ConfigItem(position = 4, keyName = "olmKiteAttackCounter", name = "Attack ratio counter",
 		description = "Counts your own attacks on whichever hand you're fighting and shows progress through your configured X:Y cycle (e.g. \"3 / 4\"), flashing on the last attack of the cycle as a cue to expect the hand's head-attack window. This is a pacing aid based on your real attacks, not a guaranteed no-hit predictor - the wiki itself calls the exact entry/reset technique advanced and situational.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteAttackCounter()
@@ -250,21 +258,21 @@ public interface CoxOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 4, keyName = "olmKiteMeleeRatio", name = "Melee hand ratio",
+	@ConfigItem(position = 5, keyName = "olmKiteMeleeRatio", name = "Melee hand ratio",
 		description = "Which melee kiting ratio to track, based on your weapon's attack speed.", section = OLM_KITE_SECTION)
 	default CoxOlmMeleeRatio olmKiteMeleeRatio()
 	{
 		return CoxOlmMeleeRatio.FOUR_ONE;
 	}
 
-	@ConfigItem(position = 5, keyName = "olmKiteMageRatio", name = "Mage hand ratio",
+	@ConfigItem(position = 6, keyName = "olmKiteMageRatio", name = "Mage hand ratio",
 		description = "Which mage kiting ratio to track, based on your weapon's attack speed.", section = OLM_KITE_SECTION)
 	default CoxOlmMageRatio olmKiteMageRatio()
 	{
 		return CoxOlmMageRatio.THREE_ZERO;
 	}
 
-	@ConfigItem(position = 6, keyName = "olmKiteSpecialWarning", name = "Special attack due warning",
+	@ConfigItem(position = 7, keyName = "olmKiteSpecialWarning", name = "Special attack due warning",
 		description = "The actual point of the hand-kiting technique: Olm's special attacks (Crystal Burst/Lightning/Teleport) run on a fixed rotation, always exactly two standard attacks apart. Forcing a head turn - moving somewhere it can't currently see you (check the head-facing indicator) - makes it skip whatever's next, denying a queued special outright rather than delaying it. This counts observed standard attacks to flag when a special is next in line, so you know to force a turn before it fires. It resyncs off Lightning and Teleport (both directly observable); Crystal Burst has no verified tracked ID, so a slot predicted as Crystal Burst is a best-effort guess, not a confirmation.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteSpecialWarning()
@@ -272,7 +280,7 @@ public interface CoxOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 7, keyName = "olmKiteStaminaReminder", name = "Drink stamina reminder",
+	@ConfigItem(position = 8, keyName = "olmKiteStaminaReminder", name = "Drink stamina reminder",
 		description = "Flags when your run energy drops below the threshold below, since stamina potions are highly recommended for solo Olm. Works anywhere in the raid, not just the Olm room.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteStaminaReminder()
@@ -280,7 +288,7 @@ public interface CoxOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 8, keyName = "olmKiteStaminaThreshold", name = "Stamina threshold (%)",
+	@ConfigItem(position = 9, keyName = "olmKiteStaminaThreshold", name = "Stamina threshold (%)",
 		description = "Show the drink-stamina reminder once run energy drops to or below this percentage.", section = OLM_KITE_SECTION)
 	default int olmKiteStaminaThreshold()
 	{

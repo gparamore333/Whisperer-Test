@@ -150,16 +150,18 @@ hands never attack - only the head does); it's forcing the head to turn away rig
 of its special attacks is due, which makes it skip that attack entirely rather than delay it.
 This assist is built around that:
 
-- **Head-facing indicator** - reads the head NPC's own live orientation every tick (not
-  either wiki page's fixed safespot-tile claims - the "Chambers of Xeric/Strategies" and
-  "Perfect Olm (Solo)" pages directly contradict each other on which tiles turn the head left
-  vs. right) to show which side it's currently facing, and highlights your own tile green
-  (safe), orange (facing middle), or red (facing you).
+- **Head-facing indicator** - the head only ever faces one of 3 real states (LEFT/MIDDLE/
+  RIGHT, not a smooth cone), read live off the head NPC's own orientation every tick, and
+  highlights your own tile green (safe), orange (head centred), or red (facing you) using the
+  wiki's own per-tile visibility table (spots 1/8 visible only when LEFT, 4/5 only when RIGHT,
+  2/7 and 3/6 visible from two of the three states - see `CoxOlmSafespot`'s javadoc for the
+  full table). One thing this can't independently verify: which physical side (west/melee-hand
+  vs. east/mage-hand) the wiki's "LEFT" actually refers to - the "Chambers of Xeric/Strategies"
+  and "Perfect Olm (Solo)" pages directly contradict each other on that, so if it looks
+  backwards once you've tested it live, flip the "Swap head-facing left/right" option.
 - **Safespot tile grid** - draws the actual 8 numbered tiles from the wiki's own safespot
   diagram (the tiles every guide calls by number, resolved to your live raid instance) and
-  highlights the nearest one currently outside the head's facing cone as your move target -
-  read live per-tile the same way as the head-facing indicator, not from either page's
-  disputed rules.
+  highlights the nearest one currently safe per that same per-tile table as your move target.
 - **Special attack due warning** - Olm's specials (Crystal Burst/Lightning/Teleport) run on a
   wiki-confirmed fixed rotation, always exactly two standard attacks apart. This counts
   observed standard attacks (the head's basic magic/range attack, spheres, and the elemental-
