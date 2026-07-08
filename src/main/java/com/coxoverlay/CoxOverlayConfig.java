@@ -272,7 +272,15 @@ public interface CoxOverlayConfig extends Config
 		return CoxOlmMageRatio.THREE_ZERO;
 	}
 
-	@ConfigItem(position = 7, keyName = "olmKiteSpecialWarning", name = "Special attack due warning",
+	@ConfigItem(position = 7, keyName = "olmKiteActionCountdown", name = "Next action tick countdown",
+		description = "The head's attack speed is 4 (confirmed on the wiki's own infobox, not estimated) - it re-checks whether it can see you every 4 ticks, forever, whether that check results in a real attack, a no-op, or a wasted turn. This shows a live countdown to that next check, resynced off every directly-observed attack. If you're on a hidden tile when the countdown hits zero, that check is denied for free; if a special is due at the same moment (see below), the countdown tells you exactly how many ticks you have left to get there.",
+		section = OLM_KITE_SECTION)
+	default boolean olmKiteActionCountdown()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 8, keyName = "olmKiteSpecialWarning", name = "Special attack due warning",
 		description = "The actual point of the hand-kiting technique: Olm's special attacks (Crystal Burst/Lightning/Teleport) run on a fixed rotation, always exactly two standard attacks apart. Forcing a head turn - moving somewhere it can't currently see you (check the head-facing indicator) - makes it skip whatever's next, denying a queued special outright rather than delaying it. This counts observed standard attacks to flag when a special is next in line, so you know to force a turn before it fires. It resyncs off Lightning and Teleport (both directly observable); Crystal Burst has no verified tracked ID, so a slot predicted as Crystal Burst is a best-effort guess, not a confirmation.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteSpecialWarning()
@@ -280,7 +288,7 @@ public interface CoxOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 8, keyName = "olmKiteStaminaReminder", name = "Drink stamina reminder",
+	@ConfigItem(position = 9, keyName = "olmKiteStaminaReminder", name = "Drink stamina reminder",
 		description = "Flags when your run energy drops below the threshold below, since stamina potions are highly recommended for solo Olm. Works anywhere in the raid, not just the Olm room.",
 		section = OLM_KITE_SECTION)
 	default boolean olmKiteStaminaReminder()
@@ -288,7 +296,7 @@ public interface CoxOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 9, keyName = "olmKiteStaminaThreshold", name = "Stamina threshold (%)",
+	@ConfigItem(position = 10, keyName = "olmKiteStaminaThreshold", name = "Stamina threshold (%)",
 		description = "Show the drink-stamina reminder once run energy drops to or below this percentage.", section = OLM_KITE_SECTION)
 	default int olmKiteStaminaThreshold()
 	{

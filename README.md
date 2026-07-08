@@ -148,7 +148,9 @@ informational - it highlights tiles and shows text, it never moves or clicks any
 The actual point of the 3:0/4:1/3:1 hand-kiting techniques isn't dodging a hand attack (the
 hands never attack - only the head does); it's forcing the head to turn away right before one
 of its special attacks is due, which makes it skip that attack entirely rather than delay it.
-This assist is built around that:
+The head's attack speed is 4 (the wiki's own infobox value, not an estimate) - it re-checks
+whether it can see a player every 4 ticks, forever, whether that check lands a real attack, a
+no-op, or a wasted turn. This assist is built around that real cadence:
 
 - **Head-facing indicator** - the head only ever faces one of 3 real states (LEFT/MIDDLE/
   RIGHT, not a smooth cone), read live off the head NPC's own orientation every tick, and
@@ -162,6 +164,10 @@ This assist is built around that:
 - **Safespot tile grid** - draws the actual 8 numbered tiles from the wiki's own safespot
   diagram (the tiles every guide calls by number, resolved to your live raid instance) and
   highlights the nearest one currently safe per that same per-tile table as your move target.
+- **Next action tick countdown** - a live countdown to the head's next 4-tick check, resynced
+  off every directly-observed attack. If you're on a hidden tile when it hits zero, that check
+  is denied for free; combined with the special-due warning below, this tells you exactly how
+  many ticks you have left to get to a safe tile before a queued special would otherwise fire.
 - **Special attack due warning** - Olm's specials (Crystal Burst/Lightning/Teleport) run on a
   wiki-confirmed fixed rotation, always exactly two standard attacks apart. This counts
   observed standard attacks (the head's basic magic/range attack, spheres, and the elemental-

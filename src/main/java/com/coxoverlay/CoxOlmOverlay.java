@@ -184,6 +184,14 @@ class CoxOlmOverlay extends Overlay
 			}
 		}
 
+		if (config.olmKiteActionCountdown() && plugin.isOlmActionTicksConfirmed())
+		{
+			String text = "Next check: " + plugin.getOlmTicksUntilNextStep();
+			Color color = plugin.getOlmTicksUntilNextStep() <= 1 ? SPECIAL_WARNING_COLOR : KITE_COUNTER_COLOR;
+			Point canvasPoint = localPlayer.getCanvasTextLocation(graphics, text, 120);
+			renderText(graphics, text, color, canvasPoint);
+		}
+
 		if (config.olmKiteSpecialWarning())
 		{
 			renderSpecialWarning(graphics, localPlayer);

@@ -197,6 +197,18 @@ public class CoxOverlayPlugin extends Plugin
 	@Getter(AccessLevel.PACKAGE)
 	private int olmSpecialDeniedFlashTicks;
 
+	// The head's attack speed is 4 per the wiki's own infobox (Great_Olm page, "attack speed =
+	// 4") - a real, verified tick cadence, not a guess. Every 4 ticks it re-checks whether a
+	// player is in whichever zone it's currently facing; if not, that whole slot is spent just
+	// turning (a "skip"), no attack happens. This tracks live ticks-until-next-check, resynced
+	// off the same directly-observed standard/special events used for the rotation tracker
+	// above (skipped/empty steps are silent, but still land exactly on the same 4-tick beat).
+	@Getter(AccessLevel.PACKAGE)
+	private int olmTicksUntilNextStep;
+	private boolean olmTickTrackerResyncedThisTick;
+	@Getter(AccessLevel.PACKAGE)
+	private boolean olmActionTicksConfirmed;
+
 	private int olmMeleeAttackCount;
 	private int olmMageAttackCount;
 
@@ -208,6 +220,8 @@ public class CoxOverlayPlugin extends Plugin
 	private static final int STANDARDS_BETWEEN_SPECIALS = 2;
 	private static final int SPECIAL_RESULT_DISPLAY_TICKS = 4;
 	private static final int STAMINA_HYSTERESIS_PERCENT = 10;
+	// Great Olm's head attack speed, per the wiki infobox - verified, not estimated.
+	private static final int OLM_HEAD_ATTACK_SPEED_TICKS = 4;
 
 	@Provides
 	CoxOverlayConfig getConfig(ConfigManager configManager)
@@ -256,6 +270,7 @@ public class CoxOverlayPlugin extends Plugin
 		showSalveReminder = calculateShowSalveReminder();
 
 		olmStandardCountedThisTick = false;
+		olmTickTrackerResyncedThisTick = false;
 
 		olmLightningTrail.clear();
 		olmHealBeamTiles.clear();
@@ -332,6 +347,8 @@ public class CoxOverlayPlugin extends Plugin
 			olmRecommendedSafespot = null;
 			olmMeleeAttackCount = 0;
 			olmMageAttackCount = 0;
+			olmActionTicksConfirmed = false;
+			olmTicksUntilNextStep = 0;
 			resetOlmSpecialRotation();
 			return;
 		}
@@ -350,6 +367,13 @@ public class CoxOverlayPlugin extends Plugin
 		}
 
 		olmSpecialDeniedFlashTicks = Math.max(0, olmSpecialDeniedFlashTicks - 1);
+
+		if (olmActionTicksConfirmed && !olmTickTrackerResyncedThisTick)
+		{
+			olmTicksUntilNextStep = olmTicksUntilNextStep <= 0
+				? OLM_HEAD_ATTACK_SPEED_TICKS - 1
+				: olmTicksUntilNextStep - 1;
+		}
 
 		Player player = client.getLocalPlayer();
 		Actor interacting = player == null ? null : player.getInteracting();
@@ -392,6 +416,7 @@ public class CoxOverlayPlugin extends Plugin
 			return;
 		}
 		olmStandardCountedThisTick = true;
+		resyncOlmActionTicks();
 
 		if (olmSpecialImminent)
 		{
@@ -419,10 +444,25 @@ public class CoxOverlayPlugin extends Plugin
 		{
 			return;
 		}
+		resyncOlmActionTicks();
 		olmRotationConfirmed = true;
 		olmSpecialImminent = false;
 		olmStandardAttacksSinceSpecial = 0;
 		olmNextSpecial = special.next();
+	}
+
+	/**
+	 * Marks the current tick as a confirmed head-action step, so the 4-tick countdown
+	 * re-anchors to it. Deliberately separate from {@code olmRotationConfirmed} (which gates
+	 * the special-rotation-position tracker and only anchors off an actually-observed special)
+	 * - this anchors off *any* observed standard or special attack, which is a much more
+	 * frequent signal, so the tick countdown can start well before the first special is seen.
+	 */
+	private void resyncOlmActionTicks()
+	{
+		olmActionTicksConfirmed = true;
+		olmTicksUntilNextStep = OLM_HEAD_ATTACK_SPEED_TICKS;
+		olmTickTrackerResyncedThisTick = true;
 	}
 
 	/**
@@ -689,6 +729,9 @@ public class CoxOverlayPlugin extends Plugin
 		olmStandardCountedThisTick = false;
 		olmLightningActiveLastTick = false;
 		olmSpecialDeniedFlashTicks = 0;
+		olmActionTicksConfirmed = false;
+		olmTicksUntilNextStep = 0;
+		olmTickTrackerResyncedThisTick = false;
 		olmMeleeAttackCount = 0;
 		olmMageAttackCount = 0;
 		showStaminaReminder = false;
