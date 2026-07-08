@@ -30,6 +30,15 @@ java {
 group = 'com.whispereroverlay'
 version = '1.0.0'
 
+// RuneLite's macOS fullscreen support (OSXFullScreenAdapter) needs explicit access to an
+// internal Apple JDK package that the module system blocks by default when running from
+// the classpath instead of the module path.
+List<String> runeliteJvmArgs = ['-ea']
+if (org.gradle.internal.os.OperatingSystem.current().isMacOsX())
+{
+    runeliteJvmArgs += ['--add-exports', 'java.desktop/com.apple.eawt=ALL-UNNAMED']
+}
+
 // Lets you try a plugin out from a plain terminal instead of your IDE's run button:
 //   ./gradlew runWhispererOverlay
 //   ./gradlew runInfernoOverlay
@@ -40,7 +49,7 @@ tasks.register('runWhispererOverlay', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.whispereroverlay.WhispererOverlayPluginTest'
     standardInput = System.in
-    jvmArgs '-ea'
+    jvmArgs runeliteJvmArgs
 }
 
 tasks.register('runInfernoOverlay', JavaExec) {
@@ -49,7 +58,7 @@ tasks.register('runInfernoOverlay', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.infernooverlay.InfernoOverlayPluginTest'
     standardInput = System.in
-    jvmArgs '-ea'
+    jvmArgs runeliteJvmArgs
 }
 
 tasks.register('runAllOverlays', JavaExec) {
@@ -58,5 +67,5 @@ tasks.register('runAllOverlays', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.osrsoverlaytest.AllOverlaysTest'
     standardInput = System.in
-    jvmArgs '-ea'
+    jvmArgs runeliteJvmArgs
 }
