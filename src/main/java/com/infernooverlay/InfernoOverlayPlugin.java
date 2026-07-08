@@ -480,9 +480,10 @@ public class InfernoOverlayPlugin extends Plugin
 
 	private void calculateUpcomingAttacks()
 	{
+		int jadAttackCycleTicks = config.sixTickJad() ? 6 : 8;
 		for (InfernoMonster monster : infernoMonsters)
 		{
-			monster.gameTick(client, lastPlayerLocation, finalPhase, ticksSinceFinalPhase);
+			monster.gameTick(client, lastPlayerLocation, finalPhase, ticksSinceFinalPhase, jadAttackCycleTicks);
 
 			if (monster.getType() == InfernoMonster.Type.ZUK && zukShieldCornerTicks == -1)
 			{

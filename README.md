@@ -38,6 +38,8 @@ Visual overlays for the Inferno.
 - **Jad/Zuk healer helper** - highlights healers that are free to kill.
 - **Zuk shield** - live and/or predicted safespot behind the moving shield.
 - **Zuk spawn-timer infobox** - countdown to the next mage/ranger spawn set.
+- **6-tick Jads** - optional toggle to predict Jad's attack cycle as 6 ticks instead of 8,
+  for the Leagues Infinite Jad challenge.
 
 Every feature in both plugins can be toggled independently in its config panel.
 

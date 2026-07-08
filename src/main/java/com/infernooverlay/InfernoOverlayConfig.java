@@ -403,6 +403,13 @@ public interface InfernoOverlayConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(position = 3, keyName = "sixTickJad", name = "6-tick Jads",
+		description = "Predicts Jad's attack cycle as 6 ticks instead of 8, for the Leagues Infinite Jad challenge.", section = JAD_SECTION)
+	default boolean sixTickJad()
+	{
+		return false;
+	}
+
 	// --- Jad Healers ---
 
 	@ConfigItem(position = 0, keyName = "prayerHealerJad", name = "Prayer helper", description = "Include Jad healers in the prayer indicator.", section = JAD_HEALERS_SECTION)

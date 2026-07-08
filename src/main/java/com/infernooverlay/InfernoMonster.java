@@ -276,7 +276,7 @@ class InfernoMonster
 		return new WorldArea(lastPlayerLocation, 1, 1).hasLineOfSightTo(client.getTopLevelWorldView(), npc.getWorldArea());
 	}
 
-	void gameTick(Client client, WorldPoint lastPlayerLocation, boolean finalPhase, int ticksSinceFinalPhase)
+	void gameTick(Client client, WorldPoint lastPlayerLocation, boolean finalPhase, int ticksSinceFinalPhase, int jadAttackCycleTicks)
 	{
 		safeSpotCache.clear();
 		idleTicks++;
@@ -320,7 +320,7 @@ class InfernoMonster
 				case JAD:
 					if (nextAttack != Attack.UNKNOWN)
 					{
-						updateNextAttack(type.getDefaultAttack(), 8);
+						updateNextAttack(type.getDefaultAttack(), jadAttackCycleTicks);
 					}
 					break;
 				case BLOB:
