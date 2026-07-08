@@ -43,6 +43,7 @@ if (org.gradle.internal.os.OperatingSystem.current().isMacOsX())
 //   ./gradlew runWhispererOverlay
 //   ./gradlew runInfernoOverlay
 //   ./gradlew runKotoriInfernoOverlay
+//   ./gradlew runCoxOverlay
 //   ./gradlew runAllOverlays
 tasks.register('runWhispererOverlay', JavaExec) {
     group = 'runelite'
@@ -67,6 +68,15 @@ tasks.register('runKotoriInfernoOverlay', JavaExec) {
     description = 'Launches RuneLite locally with the Kotori Inferno Overlay plugin registered.'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.kotoriinfernooverlay.KotoriInfernoOverlayPluginTest'
+    standardInput = System.in
+    jvmArgs runeliteJvmArgs
+}
+
+tasks.register('runCoxOverlay', JavaExec) {
+    group = 'runelite'
+    description = 'Launches RuneLite locally with the CoX Overlay plugin registered.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.coxoverlay.CoxOverlayPluginTest'
     standardInput = System.in
     jvmArgs runeliteJvmArgs
 }

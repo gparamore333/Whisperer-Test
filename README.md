@@ -70,6 +70,37 @@ few notable ways:
 
 Every feature in all three plugins can be toggled independently in its config panel.
 
+## CoX Overlay
+
+Visual overlays for Chambers of Xeric (Raids 1) - the 11 combat/puzzle rooms only, not the
+Great Olm fight (a separate undertaking on the scale of the Inferno plugins above, not yet
+built). Unlike the other plugins here, most CoX monsters don't have public, verified tick-by-
+tick attack timing, so instead of predictive countdowns this plugin reads each monster's
+**live state** directly from RuneLite's own NPC ID data - Tekton, Vespula, Vasa, the Ice
+Demon, and the crabs all change NPC ID as their fight phase changes (e.g. Ice Demon frozen
+vs. thawed, Tekton fighting vs. walking back to the anvil), so the state labels shown are
+exact, not guessed.
+
+- **Prayer-tab reminder** - outlines the correct protection prayer for whichever tracked
+  monster is closest, for every monster whose attack style is unambiguous (Tekton, the three
+  Vanguards, the Guardians, Skeletal Mystics, the Tightrope ranger/mage) or determinable by
+  distance (lizardman shamans and the small Muttadile switch between melee and ranged
+  depending on whether they're adjacent to you, same as their normal wilderness behavior).
+  You still click the prayer yourself - there is no auto-pray.
+- **Live state labels** - a short status drawn above each tracked monster: Tekton's
+  fighting/walking-back/hammering-at-anvil state, Vespula's flying/portal phases, Vasa's
+  walking/healing/crystal states, the Ice Demon's frozen/thawed state, each crab's current
+  colour, and so on.
+- **Salve amulet reminder** - flags if you enter the Mystics room without a Salve amulet
+  variant equipped (Skeletal Mystics are undead).
+
+Not yet covered, and left for a dedicated follow-up: the Great Olm fight, precise puzzle-
+solving for the Crabs room (which crystal needs which colour isn't derivable from public
+data), the resource room prep counter, and the thieving room. Vespula's actual attack
+pattern is deliberately left unpredicted (portal-phase prayer isn't a fixed style), matching
+how the upstream RoeLite plugin handles it too - configure your in-game quick-prayers if you
+want a prayer reminder there.
+
 ## Building
 
 These are standard RuneLite external plugins, structured the same way as
@@ -89,7 +120,8 @@ need to check out RuneLite's own source tree. Run the `main` method of one of th
 - `com.whispereroverlay.WhispererOverlayPluginTest`
 - `com.infernooverlay.InfernoOverlayPluginTest`
 - `com.kotoriinfernooverlay.KotoriInfernoOverlayPluginTest`
-- `com.osrsoverlaytest.AllOverlaysTest` (all three at once - handy for comparing the two
+- `com.coxoverlay.CoxOverlayPluginTest`
+- `com.osrsoverlaytest.AllOverlaysTest` (all four at once - handy for comparing the two
   Inferno plugins side-by-side)
 
 This launches the actual client - log in with your own account as normal, then enable
