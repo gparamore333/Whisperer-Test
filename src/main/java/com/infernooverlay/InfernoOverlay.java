@@ -44,6 +44,7 @@ class InfernoOverlay extends Overlay
 	private static final int BOX_HEIGHT = 5;
 	private static final int FONT_STYLE = Font.BOLD;
 	private static final int TEXT_SIZE = 32;
+	private static final Color KNOWN_SPAWN_POINT_COLOR = new Color(200, 0, 200);
 
 	private final Client client;
 	private final InfernoOverlayPlugin plugin;
@@ -66,6 +67,11 @@ class InfernoOverlay extends Overlay
 		if (config.indicateObstacles())
 		{
 			renderObstacles(graphics);
+		}
+
+		if (config.indicateKnownSpawnPoints())
+		{
+			renderKnownSpawnPoints(graphics);
 		}
 
 		if (config.safespotDisplayMode() == SafespotDisplayMode.AREA)
@@ -166,6 +172,18 @@ class InfernoOverlay extends Overlay
 			if (tilePoly != null)
 			{
 				OverlayUtil.renderPolygon(graphics, tilePoly, Color.BLUE);
+			}
+		}
+	}
+
+	private void renderKnownSpawnPoints(Graphics2D graphics)
+	{
+		for (WorldPoint worldPoint : plugin.getKnownSpawnPoints())
+		{
+			Polygon tilePoly = tilePolygon(worldPoint);
+			if (tilePoly != null)
+			{
+				OverlayUtil.renderPolygon(graphics, tilePoly, KNOWN_SPAWN_POINT_COLOR);
 			}
 		}
 	}

@@ -2,8 +2,10 @@ package com.infernooverlay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.inject.Provides;
 import com.infernooverlay.displaymodes.WaveDisplayMode;
@@ -127,6 +129,11 @@ public class InfernoOverlayPlugin extends Plugin
 
 	private final List<InfernoBlobDeathSpot> blobDeathSpots = new ArrayList<>();
 
+	// Every tile a wave monster has actually been observed spawning from this attempt.
+	// The Inferno reuses a small fixed set of spawn tiles across the whole fight, so this
+	// fills in fast and is never a guess - only tiles a spawn has genuinely happened at.
+	private final Set<WorldPoint> knownSpawnPoints = new HashSet<>();
+
 	private long lastTickMillis;
 
 	private InfernoSpawnTimerInfobox spawnTimerInfoBox;
@@ -151,6 +158,7 @@ public class InfernoOverlayPlugin extends Plugin
 	{
 		removeOverlays();
 		currentWaveNumber = -1;
+		knownSpawnPoints.clear();
 	}
 
 	private void addOverlays()
@@ -188,11 +196,13 @@ public class InfernoOverlayPlugin extends Plugin
 			removeOverlays();
 			zukShield = null;
 			zuk = null;
+			knownSpawnPoints.clear();
 		}
 		else if (currentWaveNumber == -1)
 		{
 			infernoMonsters.clear();
 			currentWaveNumber = 1;
+			knownSpawnPoints.clear();
 			addOverlays();
 		}
 	}
@@ -288,6 +298,11 @@ public class InfernoOverlayPlugin extends Plugin
 		if (type == null)
 		{
 			return;
+		}
+
+		if (isWaveSpawnType(type))
+		{
+			knownSpawnPoints.add(WorldPoint.fromLocalInstance(client, npc.getLocalLocation()));
 		}
 
 		switch (type)
@@ -451,6 +466,11 @@ public class InfernoOverlayPlugin extends Plugin
 	List<InfernoBlobDeathSpot> getBlobDeathSpots()
 	{
 		return blobDeathSpots;
+	}
+
+	Set<WorldPoint> getKnownSpawnPoints()
+	{
+		return knownSpawnPoints;
 	}
 
 	long getLastTickMillis()
@@ -940,6 +960,23 @@ public class InfernoOverlayPlugin extends Plugin
 	private static boolean isDead(NPC npc)
 	{
 		return npc.getHealthRatio() == 0;
+	}
+
+	private static boolean isWaveSpawnType(InfernoMonster.Type type)
+	{
+		switch (type)
+		{
+			case NIBBLER:
+			case BAT:
+			case BLOB:
+			case MELEE:
+			case RANGER:
+			case MAGE:
+			case JAD:
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	private boolean isPrayerHelper(InfernoMonster monster)

@@ -163,6 +163,15 @@ public interface InfernoOverlayConfig extends Config
 		return Color.WHITE;
 	}
 
+	@ConfigItem(position = 4, keyName = "indicateKnownSpawnPoints", name = "Known spawn points",
+		description = "Marks every tile a monster has actually spawned from this attempt. The Inferno reuses a small fixed set " +
+			"of spawn tiles all fight, so this fills in fast and can help you anticipate where the next wave's monsters will " +
+			"appear - it only ever shows tiles a spawn has genuinely happened at, never a guess.", section = WAVES_SECTION)
+	default boolean indicateKnownSpawnPoints()
+	{
+		return true;
+	}
+
 	// --- Extra ---
 
 	@ConfigItem(position = 0, keyName = "indicateObstacles", name = "Obstacles",
@@ -283,22 +292,25 @@ public interface InfernoOverlayConfig extends Config
 		return true;
 	}
 
-	@ConfigItem(position = 2, keyName = "digTimer", name = "Dig timer",
-		description = "Draws a heuristic countdown hinting when a meleer might reposition underground.", section = MELEERS_SECTION)
+	@ConfigItem(position = 2, keyName = "digTimer", name = "Idle warning",
+		description = "Draws a rising idle-tick count on meleers (turning orange past the danger threshold below) as a rough warning that " +
+			"one might be about to dig underground and reposition. This is NOT a precise countdown - the exact dig trigger isn't " +
+			"confirmed data, so it counts up (elapsed idle time) rather than down. Once a meleer actually starts digging, the " +
+			"regular 'Attack timer' above takes over with a real countdown to when it resurfaces.", section = MELEERS_SECTION)
 	default boolean digTimer()
 	{
 		return false;
 	}
 
 	@Range(min = 1, max = 50)
-	@ConfigItem(position = 3, keyName = "digTimerThreshold", name = "Dig timer draw threshold", description = "Idle-tick count at which the dig timer starts showing.", section = MELEERS_SECTION)
+	@ConfigItem(position = 3, keyName = "digTimerThreshold", name = "Idle warning draw threshold", description = "Idle-tick count at which the idle warning starts showing.", section = MELEERS_SECTION)
 	default int digTimerThreshold()
 	{
 		return 20;
 	}
 
 	@Range(min = 30, max = 70)
-	@ConfigItem(position = 4, keyName = "digTimerDangerThreshold", name = "Dig timer danger threshold", description = "Idle-tick count at which the dig timer turns dangerous.", section = MELEERS_SECTION)
+	@ConfigItem(position = 4, keyName = "digTimerDangerThreshold", name = "Idle warning danger threshold", description = "Idle-tick count at which the idle warning turns dangerous (orange).", section = MELEERS_SECTION)
 	default int digTimerDangerThreshold()
 	{
 		return 50;
