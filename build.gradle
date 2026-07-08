@@ -30,3 +30,31 @@ java {
 
 group = 'com.whispereroverlay'
 version = '1.0.0'
+
+// Lets you try a plugin out from a plain terminal instead of your IDE's run button:
+//   ./gradlew runWhispererOverlay
+//   ./gradlew runInfernoOverlay
+//   ./gradlew runAllOverlays
+tasks.register('runWhispererOverlay', JavaExec) {
+    group = 'runelite'
+    description = 'Launches RuneLite locally with the Whisperer Overlay plugin registered.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.whispereroverlay.WhispererOverlayPluginTest'
+    standardInput = System.in
+}
+
+tasks.register('runInfernoOverlay', JavaExec) {
+    group = 'runelite'
+    description = 'Launches RuneLite locally with the Inferno Overlay plugin registered.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.infernooverlay.InfernoOverlayPluginTest'
+    standardInput = System.in
+}
+
+tasks.register('runAllOverlays', JavaExec) {
+    group = 'runelite'
+    description = 'Launches RuneLite locally with both overlay plugins registered.'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.osrsoverlaytest.AllOverlaysTest'
+    standardInput = System.in
+}
