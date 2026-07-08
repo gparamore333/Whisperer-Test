@@ -22,6 +22,9 @@ public interface CoxOverlayConfig extends Config
 	@ConfigSection(name = "Mystics", description = "Mystics room options", position = 2)
 	String MYSTICS_SECTION = "mystics";
 
+	@ConfigSection(name = "Great Olm", description = "Great Olm fight options", position = 3)
+	String OLM_SECTION = "olm";
+
 	@ConfigItem(position = 0, keyName = "enablePrayerOverlay", name = "Enable prayer overlay",
 		description = "Master toggle for the prayer-tab icon indicator.", section = GENERAL_SECTION)
 	default boolean enablePrayerOverlay()
@@ -105,6 +108,45 @@ public interface CoxOverlayConfig extends Config
 	@ConfigItem(position = 0, keyName = "salveReminder", name = "Salve amulet reminder",
 		description = "Warns if you enter the Mystics room without a Salve amulet variant equipped (Skeletal Mystics are undead).", section = MYSTICS_SECTION)
 	default boolean salveReminder()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 0, keyName = "olmEnable", name = "Enable Great Olm overlay", description = "Master toggle for the Olm room overlay.", section = OLM_SECTION)
+	default boolean olmEnable()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 1, keyName = "olmBombHeatmap", name = "Crystal bomb heatmap",
+		description = "Colour-coded danger zone and countdown around crystal bombs (8 ticks from spawn to detonation).", section = OLM_SECTION)
+	default boolean olmBombHeatmap()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 2, keyName = "olmAcidWarning", name = "Acid pool warning", description = "Highlights acid pools on the ground.", section = OLM_SECTION)
+	default boolean olmAcidWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 3, keyName = "olmCrystalWarning", name = "Falling crystal warning", description = "Highlights falling-crystal ground markers.", section = OLM_SECTION)
+	default boolean olmCrystalWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 4, keyName = "olmLightningWarning", name = "Lightning trail warning",
+		description = "Highlights the Great Olm's lightning trail tiles (binds and disables prayer).", section = OLM_SECTION)
+	default boolean olmLightningWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 5, keyName = "olmRemoveHeadAttack", name = "Remove head Attack option",
+		description = "Removes the Attack menu option on Olm's head while a hand is still active, to prevent misclicks (the head just heals itself outside the final phase). You still choose what to click - this only removes a wrong option.", section = OLM_SECTION)
+	default boolean olmRemoveHeadAttack()
 	{
 		return true;
 	}

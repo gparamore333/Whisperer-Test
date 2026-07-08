@@ -12,7 +12,8 @@ enum CoxRoom
 	CRABS("Crabs"),
 	ICE_DEMON("Ice Demon"),
 	MYSTICS("Mystics"),
-	TIGHTROPE("Tightrope");
+	TIGHTROPE("Tightrope"),
+	OLM("Great Olm");
 
 	private final String displayName;
 

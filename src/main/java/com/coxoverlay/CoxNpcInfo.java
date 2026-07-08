@@ -67,7 +67,16 @@ enum CoxNpcInfo
 	SKELETAL_MYSTIC_C(NpcID.RAIDS_SKELETONMYSTIC_C, CoxRoom.MYSTICS, "Skeletal Mystic", Prayer.PROTECT_FROM_MAGIC),
 
 	TIGHTROPE_RANGER(NpcID.RAIDS_TIGHTROPE_RANGER, CoxRoom.TIGHTROPE, "Deathly ranger", Prayer.PROTECT_FROM_MISSILES),
-	TIGHTROPE_MAGE(NpcID.RAIDS_TIGHTROPE_MAGE, CoxRoom.TIGHTROPE, "Deathly mage", Prayer.PROTECT_FROM_MAGIC);
+	TIGHTROPE_MAGE(NpcID.RAIDS_TIGHTROPE_MAGE, CoxRoom.TIGHTROPE, "Deathly mage", Prayer.PROTECT_FROM_MAGIC),
+
+	OLM_HEAD_SPAWNING(NpcID.OLM_HEAD_SPAWNING, CoxRoom.OLM, "Head - spawning", null),
+	OLM_HEAD(NpcID.OLM_HEAD, CoxRoom.OLM, "Head active", null),
+	OLM_HAND_LEFT_SPAWNING(NpcID.OLM_HAND_LEFT_SPAWNING, CoxRoom.OLM, "Left hand (melee) - spawning", null),
+	OLM_HAND_LEFT(NpcID.OLM_HAND_LEFT, CoxRoom.OLM, "Left hand (melee) active", Prayer.PROTECT_FROM_MELEE),
+	OLM_HAND_LEFT_DYING(NpcID.OLM_HAND_LEFT_DYING, CoxRoom.OLM, "Left hand disabled", null),
+	OLM_HAND_RIGHT_SPAWNING(NpcID.OLM_HAND_RIGHT_SPAWNING, CoxRoom.OLM, "Right hand (magic) - spawning", null),
+	OLM_HAND_RIGHT(NpcID.OLM_HAND_RIGHT, CoxRoom.OLM, "Right hand (magic) active", Prayer.PROTECT_FROM_MAGIC),
+	OLM_HAND_RIGHT_DYING(NpcID.OLM_HAND_RIGHT_DYING, CoxRoom.OLM, "Right hand disabled", null);
 
 	private static final Map<Integer, CoxNpcInfo> BY_ID = new HashMap<>();
 

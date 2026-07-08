@@ -1,22 +1,32 @@
 package com.coxoverlay;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.inject.Provides;
 import lombok.AccessLevel;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.GameObject;
+import net.runelite.api.GraphicsObject;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
+import net.runelite.api.MenuEntry;
 import net.runelite.api.NPC;
 import net.runelite.api.Prayer;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameObjectDespawned;
+import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -57,7 +67,17 @@ public class CoxOverlayPlugin extends Plugin
 	private CoxOverlay overlay;
 
 	@Inject
+	private CoxOlmOverlay olmOverlay;
+
+	@Inject
 	private CoxOverlayConfig config;
+
+	// Great Olm's lightning-trail spot animation. Its current gameval name (SpotanimID 1356)
+	// doesn't mention lightning at all - Jagex's internal cache names frequently don't match
+	// what the effect actually looks like in game - but this exact numeric ID is unchanged
+	// from when it was verified and named OLM_LIGHTNING in RuneLite's own (now-deprecated)
+	// GraphicID table, and gameval IDs are never recycled for a different effect.
+	private static final int OLM_LIGHTNING_SPOTANIM_ID = 1356;
 
 	@Getter(AccessLevel.PACKAGE)
 	private final List<CoxTrackedNpc> trackedNpcs = new ArrayList<>();
@@ -67,6 +87,18 @@ public class CoxOverlayPlugin extends Plugin
 
 	@Getter(AccessLevel.PACKAGE)
 	private boolean showSalveReminder;
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Set<CoxOlmBomb> olmBombs = new HashSet<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Set<GameObject> olmAcidPools = new HashSet<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Set<GameObject> olmCrystalMarkers = new HashSet<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final List<WorldPoint> olmLightningTrail = new ArrayList<>();
 
 	@Provides
 	CoxOverlayConfig getConfig(ConfigManager configManager)
@@ -80,6 +112,7 @@ public class CoxOverlayPlugin extends Plugin
 		if (isInChambers())
 		{
 			overlayManager.add(overlay);
+			overlayManager.add(olmOverlay);
 		}
 	}
 
@@ -87,9 +120,8 @@ public class CoxOverlayPlugin extends Plugin
 	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
-		trackedNpcs.clear();
-		closestPrayer = null;
-		showSalveReminder = false;
+		overlayManager.remove(olmOverlay);
+		resetState();
 	}
 
 	@Subscribe
@@ -98,21 +130,44 @@ public class CoxOverlayPlugin extends Plugin
 		if (!isInChambers())
 		{
 			overlayManager.remove(overlay);
-			trackedNpcs.clear();
-			closestPrayer = null;
-			showSalveReminder = false;
+			overlayManager.remove(olmOverlay);
+			resetState();
 			return;
 		}
 
 		if (!overlayManager.anyMatch(o -> o == overlay))
 		{
 			overlayManager.add(overlay);
+			overlayManager.add(olmOverlay);
 		}
 
 		trackedNpcs.removeIf(tracked -> tracked.getNpc().isDead());
 
 		closestPrayer = calculateClosestPrayer();
 		showSalveReminder = calculateShowSalveReminder();
+
+		olmLightningTrail.clear();
+		if (config.olmEnable() && config.olmLightningWarning())
+		{
+			for (GraphicsObject graphicsObject : client.getTopLevelWorldView().getGraphicsObjects())
+			{
+				if (graphicsObject.getId() == OLM_LIGHTNING_SPOTANIM_ID)
+				{
+					olmLightningTrail.add(WorldPoint.fromLocal(client, graphicsObject.getLocation()));
+				}
+			}
+		}
+	}
+
+	private void resetState()
+	{
+		trackedNpcs.clear();
+		closestPrayer = null;
+		showSalveReminder = false;
+		olmBombs.clear();
+		olmAcidPools.clear();
+		olmCrystalMarkers.clear();
+		olmLightningTrail.clear();
 	}
 
 	@Subscribe
@@ -135,6 +190,64 @@ public class CoxOverlayPlugin extends Plugin
 	public void onNpcDespawned(NpcDespawned event)
 	{
 		trackedNpcs.removeIf(tracked -> tracked.getNpc() == event.getNpc());
+	}
+
+	@Subscribe
+	public void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		if (!isInChambers() || !config.olmEnable())
+		{
+			return;
+		}
+
+		GameObject gameObject = event.getGameObject();
+		switch (gameObject.getId())
+		{
+			case ObjectID.OLM_CRYSTAL_BOMB:
+				olmBombs.add(new CoxOlmBomb(gameObject, client.getTickCount()));
+				break;
+			case ObjectID.OLM_ACID_POOL:
+				olmAcidPools.add(gameObject);
+				break;
+			case ObjectID.OLM_CRYSTAL_ATTACK_SMALL:
+			case ObjectID.OLM_CRYSTAL_ATTACK_LARGE:
+				olmCrystalMarkers.add(gameObject);
+				break;
+			default:
+				break;
+		}
+	}
+
+	@Subscribe
+	public void onGameObjectDespawned(GameObjectDespawned event)
+	{
+		GameObject gameObject = event.getGameObject();
+		olmBombs.removeIf(bomb -> bomb.getGameObject() == gameObject);
+		olmAcidPools.remove(gameObject);
+		olmCrystalMarkers.remove(gameObject);
+	}
+
+	@Subscribe
+	public void onMenuEntryAdded(MenuEntryAdded event)
+	{
+		if (!config.olmEnable() || !config.olmRemoveHeadAttack() || !"Attack".equals(event.getOption()))
+		{
+			return;
+		}
+
+		NPC npc = event.getMenuEntry().getNpc();
+		if (npc == null || npc.getId() != NpcID.OLM_HEAD)
+		{
+			return;
+		}
+
+		boolean handAlive = trackedNpcs.stream().anyMatch(tracked ->
+			tracked.getInfo() == CoxNpcInfo.OLM_HAND_LEFT || tracked.getInfo() == CoxNpcInfo.OLM_HAND_RIGHT);
+
+		if (handAlive)
+		{
+			client.getMenu().removeMenuEntry(event.getMenuEntry());
+		}
 	}
 
 	private boolean isInChambers()
@@ -168,6 +281,8 @@ public class CoxOverlayPlugin extends Plugin
 				return config.roomMystics();
 			case TIGHTROPE:
 				return config.roomTightrope();
+			case OLM:
+				return config.olmEnable();
 			default:
 				return false;
 		}

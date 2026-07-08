@@ -72,34 +72,48 @@ Every feature in all three plugins can be toggled independently in its config pa
 
 ## CoX Overlay
 
-Visual overlays for Chambers of Xeric (Raids 1) - the 11 combat/puzzle rooms only, not the
-Great Olm fight (a separate undertaking on the scale of the Inferno plugins above, not yet
-built). Unlike the other plugins here, most CoX monsters don't have public, verified tick-by-
-tick attack timing, so instead of predictive countdowns this plugin reads each monster's
-**live state** directly from RuneLite's own NPC ID data - Tekton, Vespula, Vasa, the Ice
-Demon, and the crabs all change NPC ID as their fight phase changes (e.g. Ice Demon frozen
-vs. thawed, Tekton fighting vs. walking back to the anvil), so the state labels shown are
-exact, not guessed.
+Visual overlays for Chambers of Xeric (Raids 1) - the 11 combat/puzzle rooms plus the Great
+Olm fight. Unlike the other plugins here, most CoX monsters don't have public, verified
+tick-by-tick attack timing, so instead of predictive countdowns this plugin reads each
+monster's **live state** directly from RuneLite's own NPC ID data - Tekton, Vespula, Vasa,
+the Ice Demon, Olm's head/hands, and the crabs all change NPC ID as their fight phase
+changes (e.g. Ice Demon frozen vs. thawed, Tekton fighting vs. walking back to the anvil),
+so the state labels shown are exact, not guessed.
 
 - **Prayer-tab reminder** - outlines the correct protection prayer for whichever tracked
   monster is closest, for every monster whose attack style is unambiguous (Tekton, the three
-  Vanguards, the Guardians, Skeletal Mystics, the Tightrope ranger/mage) or determinable by
-  distance (lizardman shamans and the small Muttadile switch between melee and ranged
-  depending on whether they're adjacent to you, same as their normal wilderness behavior).
-  You still click the prayer yourself - there is no auto-pray.
+  Vanguards, the Guardians, Skeletal Mystics, the Tightrope ranger/mage, Olm's melee/magic
+  hands) or determinable by distance (lizardman shamans and the small Muttadile switch
+  between melee and ranged depending on whether they're adjacent to you, same as their
+  normal wilderness behavior). You still click the prayer yourself - there is no auto-pray.
 - **Live state labels** - a short status drawn above each tracked monster: Tekton's
   fighting/walking-back/hammering-at-anvil state, Vespula's flying/portal phases, Vasa's
   walking/healing/crystal states, the Ice Demon's frozen/thawed state, each crab's current
-  colour, and so on.
+  colour, Olm's head/hand spawning/active/disabled states, and so on.
 - **Salve amulet reminder** - flags if you enter the Mystics room without a Salve amulet
   variant equipped (Skeletal Mystics are undead).
 
-Not yet covered, and left for a dedicated follow-up: the Great Olm fight, precise puzzle-
-solving for the Crabs room (which crystal needs which colour isn't derivable from public
-data), the resource room prep counter, and the thieving room. Vespula's actual attack
-pattern is deliberately left unpredicted (portal-phase prayer isn't a fixed style), matching
-how the upstream RoeLite plugin handles it too - configure your in-game quick-prayers if you
-want a prayer reminder there.
+### Great Olm
+
+- **Crystal bomb heatmap + countdown** - a colour-coded danger zone around each crystal
+  bomb (green/yellow/orange/red/lethal by tile distance) with an exact tick-to-detonation
+  countdown - bombs always detonate exactly 8 ticks after spawning, so this is a hard
+  number, not an estimate.
+- **Acid pool, falling-crystal, and lightning-trail warnings** - highlights the ground
+  objects/effects for each of these hazards as soon as they appear.
+- **Head Attack-option removal** - removes the "Attack" option on Olm's head from your
+  right-click menu while a hand is still alive (the head just heals itself outside the
+  final phase, so attacking it then is a wasted click) - you still choose and click
+  whatever option remains, this only removes a wrong one.
+
+Not covered: precise puzzle-solving for the Crabs room (which crystal needs which colour
+isn't derivable from public data), the resource room prep counter, the thieving room, and
+Olm's non-head-phase special attacks that aren't tied to a tracked game object/graphic
+(Crystal Burst, Fire Wall/Deep Burn, Life Siphon, the teleport attack) - these either lack a
+verified projectile/graphic ID or a confirmed tick-precise trigger. Vespula's and the
+Great Olm head's actual attack patterns are also deliberately left unpredicted (not a fixed
+style), matching how the upstream RoeLite plugin handles Vespula - configure your in-game
+quick-prayers if you want a reminder there.
 
 ## Building
 
