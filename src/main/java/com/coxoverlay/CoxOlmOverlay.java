@@ -13,6 +13,7 @@ import javax.inject.Inject;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.Perspective;
+import net.runelite.api.Player;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -22,8 +23,10 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayUtil;
 
 /**
- * Draws the Great Olm crystal-bomb heatmap/countdown and the acid pool, falling-crystal, and
- * lightning-trail hazard tiles. All read live game objects/graphics - nothing here predicts
+ * Draws every Great Olm indicator: the crystal-bomb heatmap/countdown, acid pool/falling-
+ * crystal/lightning-trail/heal-beam hazard tiles, teleport target/destination markers, and
+ * burn/acid-drip victim highlights. All read live game objects, graphics, or (for the phase
+ * banner and sphere/hand-clench state) Olm's own chat announcements - nothing here predicts
  * an attack before it happens.
  */
 class CoxOlmOverlay extends Overlay
@@ -37,6 +40,11 @@ class CoxOlmOverlay extends Overlay
 	private static final Color ACID_COLOR = new Color(69, 200, 44);
 	private static final Color CRYSTAL_COLOR = new Color(255, 0, 84);
 	private static final Color LIGHTNING_COLOR = new Color(0, 150, 220);
+	private static final Color HEAL_BEAM_COLOR = new Color(255, 215, 0);
+	private static final Color TELEPORT_COLOR = new Color(193, 255, 245);
+	private static final Color ACID_TARGET_COLOR = new Color(69, 200, 44);
+	private static final Color BURN_VICTIM_COLOR = new Color(255, 100, 0);
+	private static final Color PHASE_BANNER_COLOR = Color.WHITE;
 
 	private final Client client;
 	private final CoxOverlayPlugin plugin;
@@ -89,7 +97,67 @@ class CoxOlmOverlay extends Overlay
 			}
 		}
 
+		if (config.olmHealBeamWarning())
+		{
+			for (WorldPoint point : plugin.getOlmHealBeamTiles())
+			{
+				renderHazardTile(graphics, point, HEAL_BEAM_COLOR);
+			}
+		}
+
+		if (config.olmTeleportWarning())
+		{
+			for (WorldPoint point : plugin.getOlmTeleportDestinations())
+			{
+				renderHazardTile(graphics, point, TELEPORT_COLOR);
+			}
+			for (Player target : plugin.getOlmTeleportTargets())
+			{
+				renderActorHighlight(graphics, target, TELEPORT_COLOR);
+			}
+		}
+
+		if (config.olmAcidTargetWarning() && plugin.getOlmAcidTarget() != null)
+		{
+			renderActorHighlight(graphics, plugin.getOlmAcidTarget(), ACID_TARGET_COLOR);
+		}
+
+		if (config.olmBurnVictimWarning())
+		{
+			for (Player victim : plugin.getOlmBurnVictims())
+			{
+				renderActorHighlight(graphics, victim, BURN_VICTIM_COLOR);
+			}
+		}
+
+		if (config.olmPhaseBanner() && plugin.isOlmPhaseBannerActive() && plugin.getOlmPhase() != null)
+		{
+			renderPhaseBanner(graphics);
+		}
+
 		return null;
+	}
+
+	private void renderActorHighlight(Graphics2D graphics, Player player, Color color)
+	{
+		if (player.getConvexHull() != null)
+		{
+			OverlayUtil.renderPolygon(graphics, player.getConvexHull(), color);
+		}
+	}
+
+	private void renderPhaseBanner(Graphics2D graphics)
+	{
+		String text = plugin.getOlmPhase().getLabel();
+		Point canvasPoint = client.getLocalPlayer().getCanvasTextLocation(graphics, text, 80);
+		if (canvasPoint != null)
+		{
+			graphics.setFont(new Font("Arial", Font.BOLD, 24));
+			graphics.setColor(Color.BLACK);
+			graphics.drawString(text, canvasPoint.getX() + 1, canvasPoint.getY() + 1);
+			graphics.setColor(PHASE_BANNER_COLOR);
+			graphics.drawString(text, canvasPoint.getX(), canvasPoint.getY());
+		}
 	}
 
 	private void renderBombs(Graphics2D graphics)

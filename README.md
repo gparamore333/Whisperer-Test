@@ -88,9 +88,8 @@ so the state labels shown are exact, not guessed.
   You still click the prayer yourself - there is no auto-pray. Olm's hands are deliberately
   excluded here: despite being called the "melee hand" and "mage hand," neither one actually
   attacks - that naming describes which damage type *you* need to deal to bypass their 66%
-  resistance, not what they hit you with. Only Olm's head attacks (alternating magic/ranged
-  with a 1-in-5 chance to switch each time), which isn't predictable from client-visible
-  state, so it isn't given a prayer recommendation either.
+  resistance, not what they hit you with. Olm's head does get a reminder (see below), just a
+  reactive one rather than advance warning.
 - **Live state labels** - a short status drawn above each tracked monster: Tekton's
   fighting/walking-back/hammering-at-anvil state, Vespula's flying/portal phases, Vasa's
   walking/healing/crystal states, the Ice Demon's frozen/thawed state, each crab's current
@@ -101,12 +100,38 @@ so the state labels shown are exact, not guessed.
 
 ### Great Olm
 
+Cross-verified against a second, independent open-source plugin (`coxhelper`, 2019) and
+re-checked ID-by-ID against RuneLite's *current* gameval tables and the OSRS Wiki before any
+of it was ported - Olm's kit has had real balance history, so nothing here is taken on faith
+from a years-old source. Two things that plugin got wrong for other CoX rooms were caught
+and *not* carried over: Tekton actually attacks on a 3-tick cycle (not 4) and the Guardian on
+a 4-tick cycle (not 5), per the current wiki - but since this plugin never claimed a tick
+number for either of them to begin with (state labels only), there was nothing to fix there.
+
 - **Crystal bomb heatmap + countdown** - a colour-coded danger zone around each crystal
   bomb (green/yellow/orange/red/lethal by tile distance) with an exact tick-to-detonation
   countdown - bombs always detonate exactly 8 ticks after spawning, so this is a hard
   number, not an estimate.
-- **Acid pool, falling-crystal, and lightning-trail warnings** - highlights the ground
-  objects/effects for each of these hazards as soon as they appear.
+- **Acid pool, falling-crystal, lightning-trail, and Life Siphon beam warnings** - highlights
+  the ground objects/graphics for each of these hazards as soon as they appear.
+- **Head attack prayer (reactive)** - the head alternates magic/ranged attacks
+  unpredictably (roughly a 1-in-5 chance to switch each time), so this can't warn you in
+  advance - but it does outline the correct prayer the instant the attack projectile
+  actually spawns, which is still ahead of it landing.
+- **Sphere attack prayer** - Olm's sphere attacks (aggression/magical power/accuracy and
+  dexterity) are announced in the chatbox before they land; this reads that announcement to
+  outline the exact prayer needed.
+- **Phase banner** - briefly announces each elemental phase (acid/crystal/flame) and the
+  final stand, read from Olm's own phase-transition chat message.
+- **Hand clench warning** - flags the melee hand as temporarily resistant right after it
+  clenches (confirmed melee-hand-only - the mage hand has a permanent, non-clenching
+  resistance instead, not a bug in what this mirrors). The exact resistance duration isn't
+  wiki-confirmed, so this clears after an approximate window rather than an exact countdown.
+- **Acid Drip / burn victim highlighting** - highlights whoever the Acid Drip attack is
+  currently targeting, and any player currently burning from Deep Burn.
+- **Teleport target warning** - highlights players Olm has just paired for its teleport
+  attack (read from the pairing chat message) and their landing tiles (read from the game's
+  own teleport-marker graphics).
 - **Head Attack-option removal** - removes the "Attack" option on Olm's head from your
   right-click menu while a hand is still alive (the head just heals itself outside the
   final phase, so attacking it then is a wasted click) - you still choose and click
@@ -114,11 +139,9 @@ so the state labels shown are exact, not guessed.
 
 Not covered: precise puzzle-solving for the Crabs room (which crystal needs which colour
 isn't derivable from public data), the resource room prep counter, the thieving room, and
-Olm's non-head-phase special attacks that aren't tied to a tracked game object/graphic
-(Crystal Burst, Fire Wall/Deep Burn, Life Siphon, the teleport attack) - these either lack a
-verified projectile/graphic ID or a confirmed tick-precise trigger. Vespula's and the
-Great Olm head's actual attack patterns are also deliberately left unpredicted (not a fixed
-style), matching how the upstream RoeLite plugin handles Vespula - configure your in-game
+Olm's Crystal Burst and Fire Wall specials (no verified tracked game object/graphic ID found
+for either yet). Vespula's actual attack pattern is deliberately left unpredicted (not a
+fixed style), matching how the upstream RoeLite plugin handles it - configure your in-game
 quick-prayers if you want a reminder there.
 
 ## Building

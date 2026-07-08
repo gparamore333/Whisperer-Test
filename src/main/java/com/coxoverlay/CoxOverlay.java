@@ -64,8 +64,15 @@ class CoxOverlay extends Overlay
 			}
 
 			String text = tracked.getInfo().getStateLabel();
+			Color color = Color.WHITE;
+			if (tracked.getInfo() == CoxNpcInfo.OLM_HAND_LEFT && plugin.isOlmHandClenched())
+			{
+				text += " - CLENCHED (temporarily resistant)";
+				color = Color.ORANGE;
+			}
+
 			Point canvasPoint = tracked.getNpc().getCanvasTextLocation(graphics, text, 0);
-			renderText(graphics, text, Color.WHITE, canvasPoint);
+			renderText(graphics, text, color, canvasPoint);
 		}
 	}
 

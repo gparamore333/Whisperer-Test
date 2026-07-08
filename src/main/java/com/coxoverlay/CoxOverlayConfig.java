@@ -150,4 +150,60 @@ public interface CoxOverlayConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(position = 6, keyName = "olmHeadPrayer", name = "Head attack prayer (reactive)",
+		description = "Outlines the correct prayer the instant Olm's head fires a magic or ranged projectile. It alternates styles unpredictably, so this reacts to the attack in flight rather than warning in advance.", section = OLM_SECTION)
+	default boolean olmHeadPrayer()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 7, keyName = "olmSpherePrayer", name = "Sphere attack prayer",
+		description = "Outlines the correct prayer the moment Olm announces a sphere attack in the chatbox (aggression=melee, magical power=magic, accuracy and dexterity=ranged).", section = OLM_SECTION)
+	default boolean olmSpherePrayer()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 8, keyName = "olmPhaseBanner", name = "Phase banner",
+		description = "Briefly shows which elemental phase (acid/crystal/flame) or the final stand has just started, read from Olm's own chat announcement.", section = OLM_SECTION)
+	default boolean olmPhaseBanner()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 9, keyName = "olmHandClenchWarning", name = "Hand clench warning",
+		description = "Flags the melee hand as temporarily damage-resistant after it clenches (confirmed melee-hand-only; the mage hand has no equivalent). The exact resistance duration isn't wiki-confirmed, so the warning clears after an approximate window rather than an exact countdown.", section = OLM_SECTION)
+	default boolean olmHandClenchWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 10, keyName = "olmAcidTargetWarning", name = "Acid Drip target warning",
+		description = "Highlights whoever Olm's Acid Drip attack is currently targeting (they'll start dropping acid pools under themselves).", section = OLM_SECTION)
+	default boolean olmAcidTargetWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 11, keyName = "olmBurnVictimWarning", name = "Burn victim warning",
+		description = "Highlights players currently burning from the Deep Burn attack.", section = OLM_SECTION)
+	default boolean olmBurnVictimWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 12, keyName = "olmTeleportWarning", name = "Teleport target warning",
+		description = "Highlights players Olm has just paired for its teleport attack, plus their landing tiles, read from the chat pairing message and the game's own teleport-marker graphics.", section = OLM_SECTION)
+	default boolean olmTeleportWarning()
+	{
+		return true;
+	}
+
+	@ConfigItem(position = 13, keyName = "olmHealBeamWarning", name = "Life Siphon beam tiles",
+		description = "Highlights the healing-beam tiles during Olm's final-phase Life Siphon attack.", section = OLM_SECTION)
+	default boolean olmHealBeamWarning()
+	{
+		return true;
+	}
 }
