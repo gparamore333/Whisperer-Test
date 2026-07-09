@@ -6,7 +6,7 @@ package com.coxoverlay;
  * of the room Olm is on) are deliberately left out - the wiki itself flags them as advanced
  * and situational, not something to hardcode a fixed cadence for.
  */
-enum CoxOlmMageRatio
+public enum CoxOlmMageRatio
 {
 	THREE_ZERO("3:0 (4-tick powered staff)", 3),
 	TWO_ZERO("2:0 (Tumeken's Shadow, simple method)", 2);
