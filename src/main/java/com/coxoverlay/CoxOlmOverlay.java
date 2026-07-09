@@ -295,7 +295,7 @@ class CoxOlmOverlay extends Overlay
 		Point canvasPoint = client.getLocalPlayer().getCanvasTextLocation(graphics, text, 80);
 		if (canvasPoint != null)
 		{
-			graphics.setFont(new Font("Arial", Font.BOLD, 24));
+			graphics.setFont(new Font("Arial", Font.BOLD, 16));
 			graphics.setColor(Color.BLACK);
 			graphics.drawString(text, canvasPoint.getX() + 1, canvasPoint.getY() + 1);
 			graphics.setColor(PHASE_BANNER_COLOR);
@@ -380,7 +380,7 @@ class CoxOlmOverlay extends Overlay
 
 	private static void renderText(Graphics2D graphics, String text, Color color, Point location)
 	{
-		graphics.setFont(new Font("Arial", Font.BOLD, 16));
+		graphics.setFont(new Font("Arial", Font.BOLD, 12));
 		graphics.setColor(Color.BLACK);
 		graphics.drawString(text, location.getX() + 1, location.getY() + 1);
 		graphics.setColor(color);

@@ -183,7 +183,7 @@ class CoxOverlay extends Overlay
 			return;
 		}
 
-		graphics.setFont(new Font("Arial", Font.BOLD, 16));
+		graphics.setFont(new Font("Arial", Font.BOLD, 12));
 		graphics.setColor(Color.BLACK);
 		graphics.drawString(text, location.getX() + 1, location.getY() + 1);
 		graphics.setColor(color);
