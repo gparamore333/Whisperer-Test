@@ -42,6 +42,7 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.SpotanimID;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -86,6 +87,9 @@ public class CoxOverlayPlugin extends Plugin
 
 	@Inject
 	private CoxOverlayConfig config;
+
+	@Inject
+	private ClientThread clientThread;
 
 	// Great Olm's lightning-trail spot animation. Its current gameval name (SpotanimID 1356)
 	// doesn't mention lightning at all - Jagex's internal cache names frequently don't match
@@ -232,11 +236,17 @@ public class CoxOverlayPlugin extends Plugin
 	@Override
 	protected void startUp()
 	{
-		if (isInChambers())
+		// isInChambers() reads a varbit, which (as of RuneLite 1.12.32) asserts it's called
+		// on the client thread - startUp() runs on the UI thread when toggled from the
+		// plugin list, so this has to be dispatched rather than called directly.
+		clientThread.invoke(() ->
 		{
-			overlayManager.add(overlay);
-			overlayManager.add(olmOverlay);
-		}
+			if (isInChambers())
+			{
+				overlayManager.add(overlay);
+				overlayManager.add(olmOverlay);
+			}
+		});
 	}
 
 	@Override
