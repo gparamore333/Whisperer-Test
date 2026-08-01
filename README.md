@@ -1,9 +1,9 @@
 # OSRS Overlay Helpers
 
 [RuneLite](https://runelite.net/) plugins that add **visual-only** overlays for tough boss
-fights. None of them automate anything: they never attack, walk, activate items, or toggle
-prayers on your behalf. They only read game state that's already visible on screen and draw
-indicators so you can react yourself.
+fights and trap-heavy minigames. None of them automate anything: they never attack, walk,
+activate items, or toggle prayers on your behalf. They only read game state that's already
+visible on screen and draw indicators so you can react yourself.
 
 ## Whisperer Overlay
 
@@ -190,6 +190,61 @@ Vespula's actual attack pattern is deliberately left unpredicted (not a fixed st
 how the upstream RoeLite plugin handles it - configure your in-game quick-prayers if you want
 a reminder there.
 
+## Hallowed Sepulchre Overlay
+
+Visual overlays for the Hallowed Sepulchre minigame, ported from
+[OreoCupcakes' kotori-plugins `hallowedhelper`](https://github.com/OreoCupcakes/kotori-plugins/tree/master/hallowedhelper)
+and re-verified: every hardcoded object/NPC/animation/graphic ID was cross-checked against
+RuneLite's current gameval tables (all confirmed still valid and correctly named) and the
+mechanics were cross-checked against the current OSRS Wiki.
+
+- **Fire-trap tiles** - each wizard statue is tracked live off its own renderable animation
+  (the same "watch the real animation instead of guessing a timer" approach as Inferno's dig
+  timer), coloured safe/risky/unsafe by ticks until it fires next, with the danger line
+  projected from the statue's own orientation. T3 statues use a 2-tick cycle instead of 3,
+  per the wiki's own note that floor 5's statues "change phases 1 tick faster than on floors
+  1-4" - the exact absolute tick numbers aren't stated verbatim on the wiki, so treat them as
+  strongly-supported rather than word-for-word confirmed.
+- **Lightning tiles** - highlights tiles a priest statue's lightning has just struck, with a
+  countdown. The exact cycle length isn't wiki-published (only that there's "one tick between
+  cycles with no flames present"), so the countdown carries over the legacy plugin's own
+  observed timing rather than a confirmed number.
+- **Sword and arrow danger tiles** - highlights a thrown sword's or arrow's current tile, plus
+  (for arrows) the tiles ahead of its travel direction, all read live from the NPC's own
+  position/orientation. The throwing/firing statues themselves are also outlined while
+  mid-animation.
+- **Coffins** - highlights each coffin's closed/lockpicking/opening/open state, and flags a
+  failed lockpick (poison risk). The closed/open states are read from the object's own
+  resolved appearance (its "impostor" ID); the opening-stage animations are read off your own
+  character, matching how the legacy plugin identified them. The poison-fail graphic ID isn't
+  wiki-confirmed for this specific effect - its current gameval name refers to an unrelated
+  swamp effect, which may just mean Jagex reuses a generic poison-gas graphic across content,
+  but verify in-game before fully trusting it.
+- **End-of-floor portal, bridge, stairs, floor gates** - highlighted by their live built/
+  unbuilt or closed/open state, read from confirmed current object IDs.
+- **Strange tiles (teleporters)** - highlights currently-lit blue (forward) and yellow
+  (backward) pads with a despawn countdown. The wiki confirms these light up randomly, so
+  this is reactive tracking, not prediction.
+- **Server tile** - outlines your own network-authoritative tile, off by default.
+
+**Deliberately not ported**, with why:
+
+- The original's floor 4/5 "predict the whole room's tile grid" system - large, hand-tuned,
+  per-floor state machines (with literal `//HOTFIX` comments) that synchronized live statue
+  observations against memorized pattern tables. It's superseded here by the same live
+  per-statue tracking used everywhere else in this plugin, which needs no memorized patterns
+  and can't drift out of sync with a room layout.
+- The floor-gate "pick the single correct gate among several" logic, which relied on hardcoded
+  object hashes and coordinate thresholds per floor/subfloor that couldn't be verified without
+  live testing. All tracked floor gates are highlighted uniformly instead.
+- A single hardcoded "safespot" tile coordinate for floor 1 - it's local-instance-relative
+  with no live signal confirming which floor's instance it actually applies to, so keeping it
+  risked highlighting the wrong tile on an unrelated floor.
+- Two cosmetic, non-gameplay toggles ("Explode on hit", "Glitchy Grapple") that overrode which
+  animation played on your own character for a visual gag. They didn't click, move, or send
+  input on your behalf, so they're not automation by this project's definition, but they're
+  also not "read game state and draw an overlay" - just an unrelated novelty, dropped for scope.
+
 ## Building
 
 These are standard RuneLite external plugins, structured the same way as
@@ -210,7 +265,8 @@ need to check out RuneLite's own source tree. Run the `main` method of one of th
 - `com.infernooverlay.InfernoOverlayPluginTest`
 - `com.kotoriinfernooverlay.KotoriInfernoOverlayPluginTest`
 - `com.coxoverlay.CoxOverlayPluginTest`
-- `com.osrsoverlaytest.AllOverlaysTest` (all four at once - handy for comparing the two
+- `com.hallowedoverlay.HallowedOverlayPluginTest`
+- `com.osrsoverlaytest.AllOverlaysTest` (all five at once - handy for comparing the two
   Inferno plugins side-by-side)
 
 This launches the actual client - log in with your own account as normal, then enable
